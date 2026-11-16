@@ -128,6 +128,23 @@ function applyLoginItem() {
   });
 }
 
+// Windows only shows toast notifications reliably for apps with a Start Menu
+// shortcut carrying the same AppUserModelID, so create/refresh one at startup.
+function ensureStartMenuShortcut() {
+  if (process.platform !== 'win32') return;
+  const lnk = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'PodAwful Widget.lnk');
+  const ico = path.join(__dirname, '..', '..', 'assets', 'clickhead.ico');
+  shell.writeShortcutLink(lnk, require('node:fs').existsSync(lnk) ? 'update' : 'create', {
+    target: process.execPath,
+    args: app.isPackaged ? '' : `"${app.getAppPath()}"`,
+    cwd: app.getAppPath(),
+    icon: ico,
+    iconIndex: 0,
+    appUserModelId: APP_ID,
+    description: 'PodAwful Widget',
+  });
+}
+
 function showWindow() {
   if (!win || win.isDestroyed()) createWindow();
   win.show();
@@ -176,6 +193,7 @@ function buildTrayMenu() {
 }
 
 app.whenReady().then(() => {
+  try { ensureStartMenuShortcut(); } catch (e) { console.error('shortcut', e.message); }
   store = createStore(path.join(app.getPath('userData'), 'settings.json'));
   xWatcher = createXWatcher({ store, fetchFn });
 

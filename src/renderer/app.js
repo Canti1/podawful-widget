@@ -71,8 +71,24 @@ function renderX(container, handle) {
   const wv = document.createElement('webview');
   wv.setAttribute('partition', 'persist:x');
   wv.setAttribute('src', want);
+  wv.addEventListener('dom-ready', () => wv.insertCSS(X_CLEAN_CSS));
   container.append(wv);
 }
+
+// Hide X's navigation, sidebars, and bottom bar so only the profile and posts show.
+const X_CLEAN_CSS = `
+  header[role="banner"],
+  [data-testid="sidebarColumn"],
+  [data-testid="BottomBar"],
+  [data-testid="DMDrawer"],
+  [data-testid="GrokDrawer"],
+  nav[aria-label="Primary"],
+  a[href="/compose/post"] { display: none !important; }
+  main[role="main"] { align-items: stretch !important; }
+  main[role="main"] > div, [data-testid="primaryColumn"] {
+    max-width: none !important; width: 100% !important; margin: 0 !important; border: 0 !important;
+  }
+`;
 
 // ---------- render ----------
 function render() {
