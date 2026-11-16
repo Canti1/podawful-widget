@@ -49,6 +49,11 @@ test('contentHash ignores scripts, styles, and whitespace', () => {
   assert.notStrictEqual(contentHash(a), contentHash('<p>New episode</p>'));
 });
 
+test('contentHash ignores section order shuffling', () => {
+  assert.strictEqual(contentHash('<p>EO123</p><p>EO122</p>'), contentHash('<p>EO122</p><p>EO123</p>'));
+  assert.notStrictEqual(contentHash('<p>EO123</p><p>EO122</p>'), contentHash('<p>EO124</p><p>EO123</p><p>EO122</p>'));
+});
+
 test('checkSite: first run not changed, later change detected, failure ok:false', async () => {
   const f = (body) => async () => ({ ok: true, status: 200, text: async () => body });
   const first = await checkSite('u', '', f('<p>one</p>'));

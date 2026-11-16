@@ -1,14 +1,17 @@
 const crypto = require('node:crypto');
 
-// Hash only the visible text so script/ad/token churn doesn't count as an update.
+// Hash only the set of visible text lines: ignores script/token churn and the
+// homepage's per-load shuffling of sections; new/removed content still changes it.
 function contentHash(html) {
-  const text = String(html)
+  const lines = String(html)
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<noscript[\s\S]*?<\/noscript>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/<[^>]+>/g, '\n')
+    .split('\n')
+    .map((s) => s.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+  const text = [...new Set(lines)].sort().join('\n');
   return crypto.createHash('sha256').update(text).digest('hex');
 }
 
