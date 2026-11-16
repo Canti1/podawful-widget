@@ -2,14 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
   <title>PodAwful Widget</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header>
     <img src="../../assets/clickhead.jpg" class="logo" alt="">
-    <div class="title">PodAwful Widget</div>
+    <div class="brand">
+      <div class="title">PodAwful Widget</div>
+      <div class="tagline" title="Unofficial fan-made app. Not affiliated with PodAwful.">Bully the Internet · unofficial fan app</div>
+    </div>
     <span id="paused-pill" class="pill hidden">alerts paused</span>
     <button id="pin" class="icon-btn" title="Keep on top">📌</button>
   </header>
@@ -35,7 +38,14 @@
         <select id="goon-select"></select>
         <button id="add-goon" class="small" title="Add goon">＋</button>
         <button id="edit-goon" class="small" title="Edit goon">✎</button>
+        <button id="report-goon" class="small" title="Report closed/suspended account">⚑</button>
         <button id="del-goon" class="small danger" title="Delete goon">🗑</button>
+      </div>
+      <div id="goon-news" class="news hidden"><span id="goon-news-text"></span><button id="goon-news-x" class="icon-btn" title="Dismiss">✕</button></div>
+      <div class="shared-bar">
+        <span class="hint" id="shared-line">Shared list: loading…</span>
+        <button id="refresh-goons" class="small" title="Download the latest shared goon list">↻ Refresh goons</button>
+        <button id="suggest-goon" class="small" title="Suggest someone for everyone's list (opens GitHub)">Suggest a goon</button>
       </div>
       <div class="badges" id="goon-badges"></div>
       <div class="xview" id="goon-x"></div>
@@ -63,7 +73,7 @@
       <label>Site check every (sec) <input type="number" id="s-site" min="60"></label>
 
       <h3>App</h3>
-      <label>Opera path (blank = auto) <input type="text" id="s-opera" placeholder="auto-detect"></label>
+      <label>Opera path (blank = auto; uses your default browser if Opera isn't installed) <input type="text" id="s-opera" placeholder="auto-detect"></label>
       <label class="check"><input type="checkbox" id="s-startup"> Start with Windows</label>
       <label class="check"><input type="checkbox" id="s-paused"> Pause all alerts</label>
 
@@ -72,6 +82,14 @@
         <button id="check-now" class="small">Check everything now</button>
       </div>
       <div class="hint" id="saved-msg"></div>
+
+      <h3>Goons</h3>
+      <div class="row-actions">
+        <span class="hint" id="hidden-line"></span>
+        <button id="unhide" class="small">Unhide all</button>
+      </div>
+
+      <p class="hint fanmade">Unofficial, fan-made app. Not affiliated with or endorsed by PodAwful. The goon list is community-maintained.</p>
     </section>
   </main>
 
@@ -82,6 +100,7 @@
       <label>X handle <input name="xHandle" placeholder="without @"></label>
       <label>YouTube <input name="youtube" placeholder="@handle or channel URL"></label>
       <label>Kick <input name="kick" placeholder="kick username"></label>
+      <label class="check" id="suggest-row"><input type="checkbox" name="suggest"> Also suggest them for the shared list (opens GitHub)</label>
       <div class="row-actions">
         <button value="cancel" formnovalidate class="small">Cancel</button>
         <button value="ok" id="goon-save">Save</button>

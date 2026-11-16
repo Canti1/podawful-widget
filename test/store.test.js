@@ -10,7 +10,7 @@ function tmpFile() {
   return path.join(dir, 'settings.json');
 }
 
-test('defaults when file missing, with seed goons', () => {
+test('defaults when file missing', () => {
   const s = createStore(tmpFile()).get();
   assert.strictEqual(s.intervals.liveSec, 120);
   assert.strictEqual(s.intervals.xSec, 300);
@@ -20,9 +20,8 @@ test('defaults when file missing, with seed goons', () => {
   assert.strictEqual(s.alarm.enabled, true);
   assert.strictEqual(s.startWithWindows, false);
   assert.strictEqual(s.site.url, 'https://podawful.com');
-  const names = s.goons.map((g) => g.name);
-  assert.ok(names.includes('Mersh'));
-  assert.ok(names.includes('Maoist Landlord'));
+  assert.deepStrictEqual(s.goons, []);
+  assert.match(s.shared.url, /raw\.githubusercontent\.com\/Canti1\/podawful-widget\/main\/goons\.json$/);
   assert.strictEqual(s.jesse.name, 'PodAwful');
 });
 
@@ -52,4 +51,18 @@ test('set merges nested patch without losing other keys', () => {
   const s = st.get();
   assert.strictEqual(s.x.token, 'abc');
   assert.strictEqual(s.x.capUsd, 20);
+});
+
+test('shared list save, hide, unhide persist', () => {
+  const f = tmpFile();
+  const a = createStore(f);
+  a.setShared([{ id: 'mersh', name: 'Mersh', status: 'active' }]);
+  a.hideShared('mersh');
+  a.hideShared('mersh');
+  const b = createStore(f).get();
+  assert.strictEqual(b.shared.goons[0].id, 'mersh');
+  assert.ok(b.shared.fetchedAt);
+  assert.deepStrictEqual(b.shared.hidden, ['mersh']);
+  createStore(f).unhideAll();
+  assert.deepStrictEqual(createStore(f).get().shared.hidden, []);
 });

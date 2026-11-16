@@ -32,8 +32,12 @@ function badge(label, cls, onClick, title) {
   return b;
 }
 
+const browserName = () => (state && state.runtime.browser) || 'your browser';
+
 function renderBadges(container, person) {
   container.replaceChildren();
+  if (person.status === 'closed') container.append(badge('✖ account closed', 'unset'));
+  if (person.status === 'suspended') container.append(badge('⚠ suspended', 'unset', null, person.note || ''));
   const live = (state.live || {})[person.id] || {};
   for (const [platform, name] of [['youtube', 'YouTube'], ['kick', 'Kick']]) {
     if (!person[platform]) {
@@ -42,14 +46,14 @@ function renderBadges(container, person) {
     }
     const st = live[platform];
     if (st && st.live) {
-      container.append(badge(`🔴 LIVE on ${name}`, 'live', () => widget.open(st.url), 'Watch in Opera'));
+      container.append(badge(`🔴 LIVE on ${name}`, 'live', () => widget.open(st.url), `Watch in ${browserName()}`));
     } else {
       const fallback = platform === 'kick' ? `https://kick.com/${person.kick}` : youtubeUrl(person.youtube);
-      container.append(badge(`${name}: ${st ? 'offline' : 'checking…'}`, 'link', () => widget.open(fallback), 'Open channel in Opera'));
+      container.append(badge(`${name}: ${st ? 'offline' : 'checking…'}`, 'link', () => widget.open(fallback), `Open channel in ${browserName()}`));
     }
   }
   if (person.xHandle) {
-    container.append(badge('X: check page', 'link', () => widget.open(`https://x.com/${person.xHandle}`), 'X live streams can\'t be detected automatically - open their X in Opera'));
+    container.append(badge('X: check page', 'link', () => widget.open(`https://x.com/${person.xHandle}`), `X live streams can't be detected automatically - open their X in ${browserName()}`));
   } else {
     container.append(badge('X: not set', 'unset'));
   }
@@ -109,19 +113,52 @@ function render() {
   renderX($('pod-x'), s.jesse.xHandle);
 
   // Goons tab
+  const visible = state.goons.filter((g) => !g.hidden);
   const sel = $('goon-select');
-  if (!s.goons.some((g) => g.id === selectedGoon)) selectedGoon = s.goons[0] ? s.goons[0].id : null;
+  if (!visible.some((g) => g.id === selectedGoon)) selectedGoon = visible[0] ? visible[0].id : null;
+  const groups = [
+    ['Shared goon list', visible.filter((g) => g.source === 'shared' && g.status !== 'closed')],
+    ['My goons (only on this PC)', visible.filter((g) => g.source === 'local')],
+    ['Closed accounts', visible.filter((g) => g.status === 'closed')],
+  ];
   sel.replaceChildren(
-    ...s.goons.map((g) => {
-      const o = document.createElement('option');
-      o.value = g.id;
-      o.textContent = `${isLive(g.id) ? '🔴' : '⚪'} ${g.name}`;
-      return o;
+    ...groups.filter(([, gs]) => gs.length).map(([label, gs]) => {
+      const og = document.createElement('optgroup');
+      og.label = label;
+      og.append(...gs.map((g) => {
+        const o = document.createElement('option');
+        o.value = g.id;
+        const mark = g.status === 'closed' ? '✖' : isLive(g.id) ? '🔴' : '⚪';
+        o.textContent = `${mark} ${g.name}${g.status === 'suspended' ? ' (suspended)' : ''}`;
+        return o;
+      }));
+      return og;
     })
   );
   sel.value = selectedGoon || '';
-  const goon = s.goons.find((g) => g.id === selectedGoon);
-  $('edit-goon').disabled = $('del-goon').disabled = !goon;
+  const goon = visible.find((g) => g.id === selectedGoon);
+  $('edit-goon').disabled = $('del-goon').disabled = $('report-goon').disabled = !goon;
+  const shared = !!goon && goon.source === 'shared';
+  $('edit-goon').title = shared ? 'Suggest a fix to the shared list' : 'Edit goon';
+  $('del-goon').title = shared ? 'Hide from my list' : 'Delete goon';
+  $('report-goon').classList.toggle('hidden', !shared);
+
+  const nShared = state.goons.filter((g) => g.source === 'shared').length;
+  const sl = $('shared-line');
+  sl.textContent = state.runtime.sharedOk === false
+    ? `Shared list: couldn't download (${state.runtime.sharedError || 'offline'}) - using saved copy (${nShared})`
+    : `Shared list: ${nShared} goons · updated ${timeAgo(s.shared.fetchedAt)}`;
+  const news = state.runtime.sharedNews;
+  $('goon-news').classList.toggle('hidden', !news);
+  if (news) {
+    const bits = [];
+    if (news.added.length) bits.push(`${news.added.length} new (${news.added.join(', ')})`);
+    if (news.closed.length) bits.push(`${news.closed.length} closed (${news.closed.join(', ')})`);
+    $('goon-news-text').textContent = `Goon list updated: ${bits.join(' · ')}`;
+  }
+  const nHidden = s.shared.hidden.length;
+  $('hidden-line').textContent = nHidden ? `${nHidden} shared goon${nHidden > 1 ? 's' : ''} hidden` : 'No hidden goons';
+  $('unhide').disabled = !nHidden;
   if (goon) {
     renderBadges($('goon-badges'), goon);
     renderX($('goon-x'), goon.xHandle);
@@ -165,7 +202,7 @@ function fillSettings() {
 // Tray icon gets a red dot when anyone is live.
 function updateTrayIcon() {
   const s = state.settings;
-  const anyLive = [s.jesse, ...s.goons].some((p) => isLive(p.id));
+  const anyLive = [s.jesse, ...state.goons].some((p) => isLive(p.id));
   if (anyLive === lastTrayLive) return;
   lastTrayLive = anyLive;
   const img = new Image();
@@ -210,14 +247,43 @@ function openDialog(mode, person) {
   $('goon-dialog-title').textContent = mode.type === 'add' ? 'Add goon' : `Edit ${person.name}`;
   for (const k of ['name', 'xHandle', 'youtube', 'kick']) f.elements[k].value = person ? person[k] : '';
   f.elements.name.readOnly = mode.id === 'jesse';
+  f.elements.suggest.checked = false;
+  $('suggest-row').classList.toggle('hidden', mode.type !== 'add');
   $('goon-dialog').showModal();
 }
 
 $('add-goon').onclick = () => openDialog({ type: 'add' });
-$('edit-goon').onclick = () => openDialog({ type: 'edit', id: selectedGoon }, state.settings.goons.find((g) => g.id === selectedGoon));
+const selected = () => state.goons.find((g) => g.id === selectedGoon);
+$('edit-goon').onclick = () => {
+  const g = selected();
+  if (!g) return;
+  if (g.source === 'shared') {
+    if (confirm(`${g.name} is on the shared list, so changes go through GitHub.\n\nOpen a pre-filled "fix links" form in ${browserName()}? (Needs a free GitHub account.)`)) widget.suggestGoon('update', g);
+    return;
+  }
+  openDialog({ type: 'edit', id: g.id }, g);
+};
+$('report-goon').onclick = () => {
+  const g = selected();
+  if (g && confirm(`Report that ${g.name}'s account was closed/suspended (or links are wrong)?\n\nOpens a pre-filled GitHub form in ${browserName()}. Needs a free GitHub account.`)) widget.suggestGoon('update', g);
+};
+$('suggest-goon').onclick = () => widget.suggestGoon('new', {});
+$('refresh-goons').onclick = async () => {
+  $('refresh-goons').disabled = true;
+  try { apply(await widget.refreshGoons()); } finally { $('refresh-goons').disabled = false; }
+};
+$('goon-news-x').onclick = () => widget.dismissGoonNews();
+$('unhide').onclick = () => widget.unhideGoons();
 $('edit-jesse').onclick = () => openDialog({ type: 'edit', id: 'jesse' }, state.settings.jesse);
 $('del-goon').onclick = async () => {
-  const g = state.settings.goons.find((x) => x.id === selectedGoon);
+  const g = selected();
+  if (g && g.source === 'shared') {
+    if (confirm(`Hide ${g.name}? You won't get alerts for them. (Undo in Settings.)`)) {
+      await widget.hideGoon(g.id);
+      selectedGoon = null;
+    }
+    return;
+  }
   if (g && confirm(`Remove ${g.name} from your goons?`)) {
     await widget.removeGoon(g.id);
     selectedGoon = null;
@@ -232,6 +298,7 @@ $('goon-dialog').addEventListener('close', async () => {
   if (dialogMode.type === 'add') {
     const g = await widget.addGoon(data);
     selectedGoon = g.id;
+    if ($('goon-form').elements.suggest.checked) widget.suggestGoon('new', data);
   } else {
     await widget.updateGoon(dialogMode.id, data);
   }

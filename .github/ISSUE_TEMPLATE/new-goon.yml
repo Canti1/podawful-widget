@@ -1,0 +1,24 @@
+name: Suggest a goon
+description: Add someone to the shared goon list
+title: "New goon: "
+labels: ["goon-suggestion"]
+body:
+  - type: markdown
+    attributes:
+      value: Fill in whatever you know. Leave a box blank if they aren't on that platform. Suggestions show up in everyone's widget once approved.
+  - type: input
+    id: name
+    attributes: { label: Name, description: How they're known }
+    validations: { required: true }
+  - type: input
+    id: x
+    attributes: { label: X handle, description: Without the @ }
+  - type: input
+    id: youtube
+    attributes: { label: YouTube, description: "@handle or channel URL" }
+  - type: input
+    id: kick
+    attributes: { label: Kick, description: Kick username }
+  - type: textarea
+    id: notes
+    attributes: { label: Notes, description: Anything else (optional) }

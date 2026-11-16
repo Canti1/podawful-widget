@@ -1,0 +1,34 @@
+name: Report a closed account / fix links
+description: A goon's account was closed or suspended, or their links are wrong
+title: "Update: "
+labels: ["goon-update"]
+body:
+  - type: input
+    id: goon_id
+    attributes: { label: Goon ID, description: Filled in by the widget }
+  - type: input
+    id: name
+    attributes: { label: Name }
+    validations: { required: true }
+  - type: dropdown
+    id: what
+    attributes:
+      label: What happened?
+      options:
+        - Account closed / deleted
+        - Account suspended
+        - Links are wrong (corrected below)
+        - Back / reinstated
+    validations: { required: true }
+  - type: input
+    id: x
+    attributes: { label: X handle }
+  - type: input
+    id: youtube
+    attributes: { label: YouTube }
+  - type: input
+    id: kick
+    attributes: { label: Kick }
+  - type: textarea
+    id: notes
+    attributes: { label: Notes / proof link }

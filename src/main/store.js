@@ -1,17 +1,16 @@
-﻿const fs = require('node:fs');
+const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { SHARED_URL } = require('./sharedGoons');
 
 // Handles are best guesses - editable in the app. Empty string = not set.
 function defaults() {
   return {
     jesse: { id: 'jesse', name: 'PodAwful', xHandle: 'podawful', youtube: '', kick: 'podawful' },
-    goons: [
-      { id: 'mersh', name: 'Mersh', xHandle: '', youtube: '', kick: '' },
-      { id: 'maoist-landlord', name: 'Maoist Landlord', xHandle: '', youtube: '', kick: '' },
-    ],
+    goons: [], // this person's private goons; the shared list lives in `shared`
+    shared: { url: SHARED_URL, goons: [], fetchedAt: null, hidden: [] },
     opera: { path: '' },
-    intervals: { liveSec: 120, xSec: 300, siteSec: 900 },
+    intervals: { liveSec: 120, xSec: 300, siteSec: 900, sharedSec: 21600 },
     alarm: { enabled: true, volume: 0.7 },
     x: { token: '', capUsd: 20, excludeReplies: true, monthKey: '', postsRead: 0, lastSeen: {} },
     site: { url: 'https://podawful.com', hash: '', changedAt: null },
@@ -74,6 +73,18 @@ function createStore(filePath) {
       } else {
         data.goons = data.goons.map((g) => (g.id === id ? { ...g, ...clean({ ...g, ...patch }) } : g));
       }
+      save();
+    },
+    setShared(goons) {
+      data.shared = { ...data.shared, goons, fetchedAt: Date.now() };
+      save();
+    },
+    hideShared(id) {
+      if (!data.shared.hidden.includes(id)) data.shared.hidden = [...data.shared.hidden, id];
+      save();
+    },
+    unhideAll() {
+      data.shared.hidden = [];
       save();
     },
     removeGoon(id) {

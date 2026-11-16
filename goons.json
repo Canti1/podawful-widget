@@ -1,0 +1,61 @@
+{
+  "about": "Shared goon list for the PodAwful Widget (unofficial, fan-made). Suggest changes with a GitHub issue; status is active, suspended, or closed.",
+  "goons": [
+    {
+      "id": "mersh",
+      "name": "Mersh",
+      "xHandle": "NiceGuyMersh",
+      "youtube": "@NiceGuyMersh",
+      "kick": "",
+      "status": "active"
+    },
+    {
+      "id": "maoist-landlord",
+      "name": "Maoist Landlord",
+      "xHandle": "MLredeemed",
+      "youtube": "",
+      "kick": "",
+      "status": "active"
+    },
+    {
+      "id": "mr-burgers",
+      "name": "Mr Burgers",
+      "xHandle": "JesseRahdeen",
+      "youtube": "@tricballcult",
+      "kick": "",
+      "status": "active"
+    },
+    {
+      "id": "misfit-patriot",
+      "name": "Misfit Patriot",
+      "xHandle": "MisfitPatriot",
+      "youtube": "@themisfitpatriot",
+      "kick": "",
+      "status": "active"
+    },
+    {
+      "id": "aaron-imholte",
+      "name": "Aaron Imholte",
+      "xHandle": "AaronImholte",
+      "youtube": "@SteelToeMorningShow",
+      "kick": "",
+      "status": "active"
+    },
+    {
+      "id": "ethan-ralph",
+      "name": "Ethan Ralph",
+      "xHandle": "TheRalphRetort",
+      "youtube": "",
+      "kick": "",
+      "status": "active"
+    },
+    {
+      "id": "comedy-shaman",
+      "name": "Comedy Shaman",
+      "xHandle": "ComedyShamn",
+      "youtube": "",
+      "kick": "",
+      "status": "active"
+    }
+  ]
+}
