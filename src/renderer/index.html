@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>PodAwful Widget</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <img src="../../assets/clickhead.jpg" class="logo" alt="">
+    <div class="title">PodAwful Widget</div>
+    <span id="paused-pill" class="pill hidden">alerts paused</span>
+    <button id="pin" class="icon-btn" title="Keep on top">📌</button>
+  </header>
+
+  <nav>
+    <button class="tab active" data-tab="pod">PodAwful</button>
+    <button class="tab" data-tab="goons">Goons</button>
+    <button class="tab" data-tab="settings">Settings</button>
+  </nav>
+
+  <main>
+    <section id="tab-pod" class="panel active">
+      <div class="badges" id="pod-badges"></div>
+      <div class="site-line" id="site-line">podawful.com: checking…</div>
+      <div class="row-actions">
+        <button id="edit-jesse" class="small">Edit PodAwful links</button>
+      </div>
+      <div class="xview" id="pod-x"></div>
+    </section>
+
+    <section id="tab-goons" class="panel">
+      <div class="goon-bar">
+        <select id="goon-select"></select>
+        <button id="add-goon" class="small" title="Add goon">＋</button>
+        <button id="edit-goon" class="small" title="Edit goon">✎</button>
+        <button id="del-goon" class="small danger" title="Delete goon">🗑</button>
+      </div>
+      <div class="badges" id="goon-badges"></div>
+      <div class="xview" id="goon-x"></div>
+    </section>
+
+    <section id="tab-settings" class="panel scroll">
+      <h3>Alarm</h3>
+      <label class="check"><input type="checkbox" id="s-alarm"> Smoke alarm when someone goes live</label>
+      <label>Volume <input type="range" id="s-volume" min="0" max="1" step="0.05"></label>
+      <div class="row-actions">
+        <button id="test-sound" class="small">Test sound</button>
+        <button id="test-notif" class="small">Test go-live alert</button>
+      </div>
+
+      <h3>X (paid API)</h3>
+      <label>Bearer token <input type="password" id="s-token" placeholder="paste token to enable post pop-ups"></label>
+      <div class="hint" id="x-token-state"></div>
+      <label>Monthly cap (USD) <input type="number" id="s-cap" min="1" step="1"></label>
+      <label class="check"><input type="checkbox" id="s-replies"> Skip replies and retweets</label>
+      <div class="hint" id="x-spend"></div>
+
+      <h3>Checking</h3>
+      <label>Live check every (sec) <input type="number" id="s-live" min="30"></label>
+      <label>X check every (sec) <input type="number" id="s-x" min="60"></label>
+      <label>Site check every (sec) <input type="number" id="s-site" min="60"></label>
+
+      <h3>App</h3>
+      <label>Opera path (blank = auto) <input type="text" id="s-opera" placeholder="auto-detect"></label>
+      <label class="check"><input type="checkbox" id="s-startup"> Start with Windows</label>
+      <label class="check"><input type="checkbox" id="s-paused"> Pause all alerts</label>
+
+      <div class="row-actions">
+        <button id="save-settings">Save settings</button>
+        <button id="check-now" class="small">Check everything now</button>
+      </div>
+      <div class="hint" id="saved-msg"></div>
+    </section>
+  </main>
+
+  <dialog id="goon-dialog">
+    <form method="dialog" id="goon-form">
+      <h3 id="goon-dialog-title">Add goon</h3>
+      <label>Name <input name="name" required></label>
+      <label>X handle <input name="xHandle" placeholder="without @"></label>
+      <label>YouTube <input name="youtube" placeholder="@handle or channel URL"></label>
+      <label>Kick <input name="kick" placeholder="kick username"></label>
+      <div class="row-actions">
+        <button value="cancel" formnovalidate class="small">Cancel</button>
+        <button value="ok" id="goon-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="alarm.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
