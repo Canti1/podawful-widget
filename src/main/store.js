@@ -2,7 +2,7 @@
 const path = require('node:path');
 const crypto = require('node:crypto');
 
-// Handles are best guesses â€” editable in the app. Empty string = not set.
+// Handles are best guesses - editable in the app. Empty string = not set.
 function defaults() {
   return {
     jesse: { id: 'jesse', name: 'PodAwful', xHandle: 'podawful', youtube: '', kick: 'podawful' },
