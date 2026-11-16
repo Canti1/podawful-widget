@@ -1,0 +1,51 @@
+name: Apply approved goon suggestion
+
+# Add the "approved" label to a "Suggest a goon" or "Report closed account"
+# issue and this updates goons.json, comments, and closes the issue.
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency: goons-json
+
+jobs:
+  apply:
+    # Only the repo owner's label counts.
+    if: github.event.label.name == 'approved' && github.event.sender.login == github.repository_owner
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE: ${{ github.event.issue.number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply issue to goons.json
+        id: apply
+        run: node scripts/goonIssue.js "$GITHUB_EVENT_PATH" goons.json "$RUNNER_TEMP/out" >> "$GITHUB_OUTPUT"
+      - name: Check the list is still valid
+        if: steps.apply.outputs.changed == 'true'
+        run: node --test test/goonIssue.test.js test/shared.test.js
+      - name: Commit goons.json
+        if: steps.apply.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add goons.json
+          git commit -F "$RUNNER_TEMP/out/commit-msg.txt"
+          git push
+      - name: Comment and close
+        if: steps.apply.outputs.ok == 'true'
+        run: |
+          gh issue comment "$ISSUE" --body-file "$RUNNER_TEMP/out/comment.md"
+          gh issue close "$ISSUE" --reason completed
+      - name: Comment and un-approve
+        if: steps.apply.outputs.ok != 'true'
+        run: |
+          gh issue comment "$ISSUE" --body-file "$RUNNER_TEMP/out/comment.md"
+          gh issue edit "$ISSUE" --remove-label approved
