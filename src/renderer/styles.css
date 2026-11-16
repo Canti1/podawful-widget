@@ -76,7 +76,7 @@ main { flex: 1; min-height: 0; position: relative; }
 .goon-bar { display: flex; gap: 6px; }
 .goon-bar select { flex: 1; }
 
-select, input[type=text], input[type=password], input[type=number], input:not([type]) {
+select, input[type=text], input[type=password], input[type=number], input[type=time], input:not([type]) {
   background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 0; padding: 7px 9px; font: inherit; width: 100%;
 }
 select:focus, input:focus { outline: none; border-color: var(--yellow); background: var(--glow), var(--panel); }
@@ -128,3 +128,16 @@ optgroup { color: var(--gold); font-style: normal; }
 option { color: var(--text); }
 .fanmade { margin-top: 18px; font-style: italic; }
 .row-actions .hint { align-self: center; }
+
+/* live-now strip, alert levels, update banner */
+.live-strip { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 12px; background: linear-gradient(90deg, rgba(220,53,69,.18), rgba(220,53,69,0)); }
+.live-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--live); font-weight: 700; margin-right: 2px; }
+.goon-row { display: flex; flex-direction: column; gap: 6px; }
+.goon-row .alert-select { align-self: flex-start; }
+.alert-select { width: auto; font-size: 11px; padding: 4px 6px; }
+.row-actions .alert-select { margin-left: auto; }
+#update-banner { margin: 0; }
+#update-banner .small { flex: none; }
+.time-row { display: flex; gap: 10px; }
+.time-row label { flex: 1; }
+#episode-line { cursor: pointer; }

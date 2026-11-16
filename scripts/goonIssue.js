@@ -63,6 +63,13 @@ function cleanRumble(s) {
   return v;
 }
 
+function cleanTwitch(s) {
+  const v = clean(s).replace(/^https?:\/\/(www\.|m\.)?twitch\.tv\//i, '').replace(/^@/, '').replace(/[/?#].*$/, '');
+  if (!v) return '';
+  if (!/^[A-Za-z0-9_]{3,25}$/.test(v)) throw new Error(`"${v}" isn't a valid Twitch username.`);
+  return v;
+}
+
 const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
 
 function slug(name, taken) {
@@ -91,13 +98,18 @@ function applyIssue(json, issue) {
       youtube: cleanYouTube(f['YouTube']),
       kick: cleanKick(f['Kick']),
       rumble: cleanRumble(f['Rumble']),
+      twitch: cleanTwitch(f['Twitch']),
       status: 'active',
     };
-    if (!g.xHandle && !g.youtube && !g.kick && !g.rumble) throw new Error('No X, YouTube, Kick, or Rumble given. Need at least one.');
+    if (!g.xHandle && !g.youtube && !g.kick && !g.rumble && !g.twitch) throw new Error('No X, YouTube, Kick, Rumble, or Twitch given. Need at least one.');
     const dupe =
       findGoon(goons, '', g.name) ||
-      goons.find((o) => (g.xHandle && norm(o.xHandle) === norm(g.xHandle)) || (g.kick && norm(o.kick) === norm(g.kick)) || (g.youtube && norm(o.youtube) === norm(g.youtube)) || (g.rumble && norm(o.rumble) === norm(g.rumble)));
-    if (dupe) throw new Error(`Looks like a duplicate of **${dupe.name}** (\`${dupe.id}\`), who's already on the list. Use "Report a closed account / fix links" to change them instead.`);
+      goons.find((o) => (g.xHandle && norm(o.xHandle) === norm(g.xHandle)) || (g.kick && norm(o.kick) === norm(g.kick)) || (g.youtube && norm(o.youtube) === norm(g.youtube)) || (g.rumble && norm(o.rumble) === norm(g.rumble)) || (g.twitch && norm(o.twitch) === norm(g.twitch)));
+    if (dupe) {
+      const e = new Error(`Looks like a duplicate of **${dupe.name}** (\`${dupe.id}\`), who's already on the list. Use "Report a closed account / fix links" to change them instead.`);
+      e.code = 'duplicate';
+      throw e;
+    }
     g.id = slug(g.name, new Set(goons.map((o) => o.id)));
     goons.push(g);
     return { changed: true, summary: `Added **${g.name}** to the shared goon list.`, commit: `goons: add ${g.name}` };
@@ -124,10 +136,12 @@ function applyIssue(json, issue) {
       const yt = cleanYouTube(f['YouTube']);
       const k = cleanKick(f['Kick']);
       const rb = cleanRumble(f['Rumble']);
+      const tw = cleanTwitch(f['Twitch']);
       if (x) g.xHandle = x;
       if (yt) g.youtube = yt;
       if (k) g.kick = k;
       if (rb) g.rumble = rb;
+      if (tw) g.twitch = tw;
       summary = `Updated **${g.name}**'s links.`;
     } else {
       throw new Error(`Unknown "What happened?" choice: "${clean(f['What happened?'])}".`);
@@ -167,4 +181,4 @@ function main([eventPath, goonsPath, outDir]) {
 
 if (require.main === module) main(process.argv.slice(2));
 
-module.exports = { parseForm, applyIssue, cleanX, cleanYouTube, cleanKick, cleanRumble };
+module.exports = { parseForm, applyIssue, cleanX, cleanYouTube, cleanKick, cleanRumble, cleanTwitch };

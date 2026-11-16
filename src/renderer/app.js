@@ -44,7 +44,7 @@ function renderBadges(container, person) {
   if (person.status === 'closed') container.append(badge('✖ account closed', 'unset'));
   if (person.status === 'suspended') container.append(badge('⚠ suspended', 'unset', null, person.note || ''));
   const live = (state.live || {})[person.id] || {};
-  for (const [platform, name] of [['youtube', 'YouTube'], ['kick', 'Kick'], ['rumble', 'Rumble']]) {
+  for (const [platform, name] of [['youtube', 'YouTube'], ['kick', 'Kick'], ['rumble', 'Rumble'], ['twitch', 'Twitch']]) {
     if (!person[platform]) {
       container.append(badge(`${name}: not set`, 'unset'));
       continue;
@@ -53,7 +53,7 @@ function renderBadges(container, person) {
     if (st && st.live) {
       container.append(badge(`🔴 LIVE on ${name}`, 'live', () => widget.open(st.url), `Watch in ${browserName()}`));
     } else {
-      const fallback = { kick: () => `https://kick.com/${person.kick}`, rumble: () => rumbleUrl(person.rumble), youtube: () => youtubeUrl(person.youtube) }[platform]();
+      const fallback = { kick: () => `https://kick.com/${person.kick}`, rumble: () => rumbleUrl(person.rumble), twitch: () => `https://www.twitch.tv/${person.twitch}`, youtube: () => youtubeUrl(person.youtube) }[platform]();
       container.append(badge(`${name}: ${st ? 'offline' : 'checking…'}`, 'link', () => widget.open(fallback), `Open channel in ${browserName()}`));
     }
   }
@@ -99,9 +99,63 @@ const X_CLEAN_CSS = `
   }
 `;
 
+const PLATFORM = { youtube: 'YouTube', kick: 'Kick', rumble: 'Rumble', twitch: 'Twitch' };
+const LEVELS = [['alarm', '🔊 Alarm'], ['popup', '💬 Pop-up only'], ['mute', '🔕 Muted']];
+
+function fillAlertSelect(sel, id) {
+  if (!sel.options.length) {
+    sel.append(...LEVELS.map(([v, t]) => Object.assign(document.createElement('option'), { value: v, textContent: t })));
+  }
+  sel.dataset.person = id || '';
+  sel.disabled = !id;
+  sel.value = (id && state.settings.alerts[id]) || 'alarm';
+}
+
+// Everyone live right now, across all platforms, as clickable chips under the tabs.
+function renderLiveStrip() {
+  const strip = $('live-strip');
+  const people = [state.settings.jesse, ...state.goons.filter((g) => !g.hidden && g.status !== 'closed')];
+  const chips = [];
+  for (const p of people) {
+    for (const [platform, st] of Object.entries((state.live || {})[p.id] || {})) {
+      if (st.live) chips.push(badge(`🔴 ${p.name} · ${PLATFORM[platform] || platform}`, 'live', () => widget.open(st.url), `Watch in ${browserName()}`));
+    }
+  }
+  strip.classList.toggle('hidden', !chips.length);
+  const label = document.createElement('span');
+  label.className = 'live-label';
+  label.textContent = 'Live now';
+  strip.replaceChildren(label, ...chips);
+}
+
+function renderUpdate() {
+  const u = state.runtime.update || {};
+  $('update-banner').classList.toggle('hidden', u.state !== 'ready');
+  if (u.state === 'ready') $('update-text').textContent = `Version ${u.version} is ready`;
+  const v = state.runtime.version ? `Version ${state.runtime.version}` : '';
+  const msg = {
+    dev: 'running from source (updates come from git)',
+    checking: 'checking…',
+    current: 'up to date',
+    downloading: `downloading ${u.version || 'update'}${u.percent != null ? ` (${u.percent}%)` : ''}…`,
+    ready: `${u.version} ready, restart to install`,
+    error: `update check failed: ${u.error || ''}`,
+  }[u.state] || '';
+  $('version-line').textContent = [v, msg].filter(Boolean).join(' · ');
+  $('check-update').disabled = u.state === 'dev' || u.state === 'checking' || u.state === 'downloading';
+}
+
 // ---------- render ----------
 function render() {
   const s = state.settings;
+  renderLiveStrip();
+  renderUpdate();
+  fillAlertSelect($('pod-alert'), 'jesse');
+  const ep = s.feed && s.feed.latest;
+  $('episode-line').textContent = ep ? `Latest episode: ${ep.title}${ep.date ? ' · ' + timeAgo(ep.date) : ''}` : '';
+  $('episode-line').classList.toggle('new', !!(ep && ep.date && Date.now() - ep.date < 24 * 3600 * 1000));
+  $('episode-line').onclick = ep ? () => widget.open(ep.url) : null;
+  $('episode-line').title = ep ? 'Open episode' : '';
   $('paused-pill').classList.toggle('hidden', !s.paused);
   $('pin').classList.toggle('on', !!s.onTop);
 
@@ -164,6 +218,7 @@ function render() {
   const nHidden = s.shared.hidden.length;
   $('hidden-line').textContent = nHidden ? `${nHidden} shared goon${nHidden > 1 ? 's' : ''} hidden` : 'No hidden goons';
   $('unhide').disabled = !nHidden;
+  fillAlertSelect($('goon-alert'), goon && goon.id);
   if (goon) {
     renderBadges($('goon-badges'), goon);
     renderX($('goon-x'), goon.xHandle);
@@ -202,6 +257,10 @@ function fillSettings() {
   $('s-opera').value = s.opera.path;
   $('s-startup').checked = s.startWithWindows;
   $('s-paused').checked = s.paused;
+  $('s-quiet').checked = s.quiet.enabled;
+  $('s-quiet-start').value = s.quiet.start;
+  $('s-quiet-end').value = s.quiet.end;
+  $('s-quiet-popups').checked = s.quiet.hidePopups;
 }
 
 // Tray icon gets a red dot when anyone is live.
@@ -250,7 +309,7 @@ function openDialog(mode, person) {
   dialogMode = mode;
   const f = $('goon-form');
   $('goon-dialog-title').textContent = mode.type === 'add' ? 'Add goon' : `Edit ${person.name}`;
-  for (const k of ['name', 'xHandle', 'youtube', 'kick', 'rumble']) f.elements[k].value = person ? person[k] : '';
+  for (const k of ['name', 'xHandle', 'youtube', 'kick', 'rumble', 'twitch']) f.elements[k].value = person ? person[k] : '';
   f.elements.name.readOnly = mode.id === 'jesse';
   f.elements.suggest.checked = false;
   $('suggest-row').classList.toggle('hidden', mode.type !== 'add');
@@ -299,7 +358,7 @@ $('del-goon').onclick = async () => {
 $('goon-dialog').addEventListener('close', async () => {
   if ($('goon-dialog').returnValue !== 'ok') return;
   const f = $('goon-form').elements;
-  const data = { name: f.name.value, xHandle: f.xHandle.value, youtube: f.youtube.value, kick: f.kick.value, rumble: f.rumble.value };
+  const data = { name: f.name.value, xHandle: f.xHandle.value, youtube: f.youtube.value, kick: f.kick.value, rumble: f.rumble.value, twitch: f.twitch.value };
   if (dialogMode.type === 'add') {
     const g = await widget.addGoon(data);
     selectedGoon = g.id;
@@ -309,6 +368,14 @@ $('goon-dialog').addEventListener('close', async () => {
   }
   apply(await widget.getState());
 });
+
+for (const sel of [$('pod-alert'), $('goon-alert')]) {
+  sel.onchange = async () => {
+    if (sel.dataset.person) apply(await widget.saveSettings({ alerts: { [sel.dataset.person]: sel.value } }));
+  };
+}
+$('update-btn').onclick = () => widget.installUpdate();
+$('check-update').onclick = () => widget.checkUpdate();
 
 $('test-sound').onclick = () => playAlarm(Number($('s-volume').value));
 $('test-notif').onclick = () => widget.testNotification();
@@ -326,6 +393,12 @@ $('save-settings').onclick = async () => {
     opera: { path: $('s-opera').value.trim() },
     startWithWindows: $('s-startup').checked,
     paused: $('s-paused').checked,
+    quiet: {
+      enabled: $('s-quiet').checked,
+      start: $('s-quiet-start').value || '23:00',
+      end: $('s-quiet-end').value || '08:00',
+      hidePopups: $('s-quiet-popups').checked,
+    },
   };
   const token = $('s-token').value.trim();
   if (token) patch.x.token = token;

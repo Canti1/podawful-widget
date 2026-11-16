@@ -22,6 +22,9 @@ body:
   - type: input
     id: rumble
     attributes: { label: Rumble, description: Channel name or rumble.com URL }
+  - type: input
+    id: twitch
+    attributes: { label: Twitch, description: Twitch username }
   - type: textarea
     id: notes
     attributes: { label: Notes, description: Anything else (optional) }

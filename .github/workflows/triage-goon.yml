@@ -1,0 +1,56 @@
+name: Check goon suggestion
+
+# Spam guard + first check for goon suggestions/reports. Flags invalid ones,
+# closes duplicates and floods, marks brand-new accounts, and tags valid ones
+# "ready-for-review". Approving is still done with the "approved" label.
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  triage:
+    if: >-
+      (contains(github.event.issue.labels.*.name, 'goon-suggestion') || contains(github.event.issue.labels.*.name, 'goon-update')) &&
+      github.event.issue.state == 'open' &&
+      (github.event.action == 'opened' || contains(github.event.issue.labels.*.name, 'needs-fix'))
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE: ${{ github.event.issue.number }}
+      AUTHOR: ${{ github.event.issue.user.login }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Look up the author
+        id: who
+        run: |
+          SINCE=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          COUNT=$(gh issue list -R "$GITHUB_REPOSITORY" --author "$AUTHOR" --state all --limit 100 \
+            --search "created:>=$SINCE" --json labels \
+            --jq '[.[] | select(any(.labels[]; .name == "goon-suggestion" or .name == "goon-update"))] | length')
+          CREATED=$(gh api "users/$AUTHOR" --jq .created_at || echo "")
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "created=$CREATED" >> "$GITHUB_OUTPUT"
+      - name: Triage
+        id: t
+        run: node scripts/triageIssue.js "$GITHUB_EVENT_PATH" goons.json "${{ steps.who.outputs.count }}" "${{ steps.who.outputs.created }}" "$RUNNER_TEMP/out" >> "$GITHUB_OUTPUT"
+      - name: Apply result
+        run: |
+          gh issue comment "$ISSUE" --body-file "$RUNNER_TEMP/out/comment.md"
+          if [ -n "$ADD" ]; then gh issue edit "$ISSUE" --add-label "$ADD"; fi
+          if [ -n "$REMOVE" ]; then gh issue edit "$ISSUE" --remove-label "$REMOVE" || true; fi
+          if [ -n "$CLOSE" ]; then gh issue close "$ISSUE" --reason "$CLOSE"; fi
+        env:
+          ADD: ${{ steps.t.outputs.add }}
+          REMOVE: ${{ steps.t.outputs.remove }}
+          CLOSE: ${{ steps.t.outputs.close }}

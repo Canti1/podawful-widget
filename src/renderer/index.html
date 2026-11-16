@@ -17,18 +17,24 @@
     <button id="pin" class="icon-btn" title="Keep on top">📌</button>
   </header>
 
+  <div id="update-banner" class="news hidden"><span id="update-text"></span><button id="update-btn" class="small">Restart to update</button></div>
+
   <nav>
     <button class="tab active" data-tab="pod">PodAwful</button>
     <button class="tab" data-tab="goons">Goons</button>
     <button class="tab" data-tab="settings">Settings</button>
   </nav>
 
+  <div id="live-strip" class="live-strip hidden"></div>
+
   <main>
     <section id="tab-pod" class="panel active">
       <div class="badges" id="pod-badges"></div>
       <div class="site-line" id="site-line">podawful.com: checking…</div>
+      <div class="site-line" id="episode-line"></div>
       <div class="row-actions">
         <button id="edit-jesse" class="small">Edit PodAwful links</button>
+        <select id="pod-alert" class="alert-select" title="How loud PodAwful alerts are"></select>
       </div>
       <div class="xview" id="pod-x"></div>
     </section>
@@ -47,7 +53,10 @@
         <button id="refresh-goons" class="small" title="Download the latest shared goon list">↻ Refresh goons</button>
         <button id="suggest-goon" class="small" title="Suggest someone for everyone's list (opens GitHub)">Suggest a goon</button>
       </div>
-      <div class="badges" id="goon-badges"></div>
+      <div class="goon-row">
+        <div class="badges" id="goon-badges"></div>
+        <select id="goon-alert" class="alert-select" title="How loud this goon's alerts are"></select>
+      </div>
       <div class="xview" id="goon-x"></div>
     </section>
 
@@ -59,6 +68,14 @@
         <button id="test-sound" class="small">Test sound</button>
         <button id="test-notif" class="small">Test go-live alert</button>
       </div>
+
+      <h3>Quiet hours</h3>
+      <label class="check"><input type="checkbox" id="s-quiet"> No alarm sound during quiet hours (pop-ups still show)</label>
+      <div class="time-row">
+        <label>From <input type="time" id="s-quiet-start"></label>
+        <label>To <input type="time" id="s-quiet-end"></label>
+      </div>
+      <label class="check"><input type="checkbox" id="s-quiet-popups"> Hide pop-ups during quiet hours too</label>
 
       <h3>X (paid API)</h3>
       <label>Bearer token <input type="password" id="s-token" placeholder="paste token to enable post pop-ups"></label>
@@ -83,6 +100,12 @@
       </div>
       <div class="hint" id="saved-msg"></div>
 
+      <h3>Updates</h3>
+      <div class="row-actions">
+        <span class="hint" id="version-line"></span>
+        <button id="check-update" class="small">Check for updates</button>
+      </div>
+
       <h3>Goons</h3>
       <div class="row-actions">
         <span class="hint" id="hidden-line"></span>
@@ -101,6 +124,7 @@
       <label>YouTube <input name="youtube" placeholder="@handle or channel URL"></label>
       <label>Kick <input name="kick" placeholder="kick username"></label>
       <label>Rumble <input name="rumble" placeholder="channel name or rumble.com URL"></label>
+      <label>Twitch <input name="twitch" placeholder="twitch username"></label>
       <label class="check" id="suggest-row"><input type="checkbox" name="suggest"> Also suggest them for the shared list (opens GitHub)</label>
       <div class="row-actions">
         <button value="cancel" formnovalidate class="small">Cancel</button>

@@ -4,6 +4,9 @@ const { createStore } = require('./store');
 const { checkYouTube } = require('./checkers/youtube');
 const { checkKick } = require('./checkers/kick');
 const { checkRumble } = require('./checkers/rumble');
+const { checkTwitch } = require('./checkers/twitch');
+const { checkFeed } = require('./checkers/feed');
+const { isQuiet, alertMode } = require('./alerts');
 const { checkSite } = require('./checkers/site');
 const { createXWatcher } = require('./checkers/x');
 const { createLiveTracker, checkAllLive } = require('./liveTracker');
@@ -20,7 +23,7 @@ app.userAgentFallback = app.userAgentFallback.replace(/\s?Electron\/\S+/, '').re
 
 let win, tray, store, xWatcher;
 const tracker = createLiveTracker();
-const runtime = { sharedOk: null, sharedNews: null, xStatus: 'no-token', lastLiveCheck: null, lastXCheck: null, lastSiteCheck: null, siteOk: null };
+const runtime = { update: { state: 'idle' }, sharedOk: null, sharedNews: null, xStatus: 'no-token', lastLiveCheck: null, lastXCheck: null, lastSiteCheck: null, siteOk: null };
 const fetchFn = (url, opts) => net.fetch(url, opts);
 const timers = {};
 let quitting = false;
@@ -62,12 +65,23 @@ function updateTray(st) {
   tray.setToolTip(names.length ? `LIVE: ${names.join(', ')}` : 'PodAwful Widget - nobody live');
 }
 
-function notify(title, body, url, withAlarm) {
-  if (store.get().paused || process.env.PAW_SILENT) return;
-  const n = new Notification({ title, body, icon: ICON_PATH, silent: withAlarm && store.get().alarm.enabled });
+// opts.alarm: this event normally rings the alarm (go-live).
+// opts.personId: apply that person's alert level. opts.force: ignore pause/quiet (test button).
+function notify(title, body, url, opts = {}) {
+  const s = store.get();
+  if (!opts.force && (s.paused || process.env.PAW_SILENT)) return;
+  const mode = alertMode({
+    level: opts.personId ? s.alerts[opts.personId] : 'alarm',
+    wantAlarm: !!opts.alarm,
+    quiet: !opts.force && s.quiet.enabled && isQuiet(new Date(), s.quiet.start, s.quiet.end),
+    hidePopupsWhenQuiet: s.quiet.hidePopups,
+    alarmEnabled: s.alarm.enabled,
+  });
+  if (!mode.popup) return;
+  const n = new Notification({ title, body, icon: ICON_PATH, silent: mode.alarm });
   n.on('click', () => (url ? open(url) : showWindow()));
   n.show();
-  if (withAlarm && store.get().alarm.enabled && win && !win.isDestroyed()) win.webContents.send('alarm');
+  if (mode.alarm && win && !win.isDestroyed()) win.webContents.send('alarm');
 }
 
 async function runLive() {
@@ -77,12 +91,13 @@ async function runLive() {
     youtube: (c) => checkYouTube(c, fetchFn),
     kick: (c) => checkKick(c, fetchFn),
     rumble: (c) => checkRumble(c, fetchFn),
+    twitch: (c) => checkTwitch(c, fetchFn),
   });
   for (const { person, platform, result } of results) {
     if (tracker.update(person.id, platform, result) === 'went-live') {
-      const where = { kick: 'Kick', rumble: 'Rumble', youtube: 'YouTube' }[platform];
+      const where = { kick: 'Kick', rumble: 'Rumble', youtube: 'YouTube', twitch: 'Twitch' }[platform];
       const browser = findOpera(store.get().opera.path) ? 'Opera' : 'your browser';
-      notify(`${person.name} is LIVE on ${where}`, `Click to watch in ${browser}`, result.url, true);
+      notify(`${person.name} is LIVE on ${where}`, `Click to watch in ${browser}`, result.url, { alarm: true, personId: person.id });
     }
   }
   runtime.lastLiveCheck = Date.now();
@@ -92,10 +107,23 @@ async function runX() {
   const r = await xWatcher.poll(people());
   runtime.xStatus = r.status;
   runtime.lastXCheck = Date.now();
-  for (const p of r.posts) notify(`${p.person.name} posted on X`, p.text.slice(0, 240), p.url, false);
+  for (const p of r.posts) notify(`${p.person.name} posted on X`, p.text.slice(0, 240), p.url, { personId: p.person.id });
+}
+
+// New episodes come from the podcast feed; the page-change check below only
+// fires for other site changes, so an episode doesn't produce two alerts.
+async function runFeed() {
+  const f = store.get().feed;
+  const r = await checkFeed(f.url, f.lastGuid, fetchFn);
+  runtime.feedOk = r.ok;
+  if (!r.ok) return false;
+  store.set({ feed: { lastGuid: r.latest.guid, latest: r.latest } });
+  if (r.isNew) notify('New PodAwful episode', r.latest.title, r.latest.url, { personId: 'jesse' });
+  return r.isNew;
 }
 
 async function runSite() {
+  const newEpisode = await runFeed().catch(() => false);
   const s = store.get().site;
   const r = await checkSite(s.url, s.hash, fetchFn);
   runtime.siteOk = r.ok;
@@ -103,7 +131,7 @@ async function runSite() {
   if (!r.ok) return;
   if (r.changed) {
     store.set({ site: { hash: r.hash, changedAt: Date.now() } });
-    notify('podawful.com updated', 'Something new is on the site', s.url, false);
+    if (!newEpisode) notify('podawful.com updated', 'Something new is on the site', s.url, { personId: 'jesse' });
   } else if (!s.hash) {
     store.set({ site: { hash: r.hash } });
   }
@@ -125,7 +153,7 @@ async function runShared() {
     const bits = [];
     if (d.added.length) bits.push(`${d.added.length} new (${d.added.join(', ')})`);
     if (d.closed.length) bits.push(`${d.closed.length} closed (${d.closed.join(', ')})`);
-    notify('Goon list updated', bits.join(' · '), null, false);
+    notify('Goon list updated', bits.join(' · '), null);
   }
   if (d.changed) runLive().then(pushState).catch(() => {});
 }
@@ -164,6 +192,33 @@ function startAll() {
 
 function startShared() {
   schedule('shared', runShared, 'sharedSec');
+}
+
+// Auto-update from GitHub Releases (installed copies only). Downloads in the
+// background, then the UI offers "Restart to update"; otherwise it installs on quit.
+let autoUpdater = null;
+function setupUpdater() {
+  runtime.version = app.getVersion();
+  if (!app.isPackaged) {
+    runtime.update = { state: 'dev' };
+    return;
+  }
+  ({ autoUpdater } = require('electron-updater'));
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  const set = (u) => { runtime.update = u; pushState(); };
+  autoUpdater.on('checking-for-update', () => set({ state: 'checking' }));
+  autoUpdater.on('update-not-available', () => set({ state: 'current', at: Date.now() }));
+  autoUpdater.on('update-available', (i) => set({ state: 'downloading', version: i.version }));
+  autoUpdater.on('download-progress', (p) => set({ state: 'downloading', version: runtime.update.version, percent: Math.round(p.percent) }));
+  autoUpdater.on('update-downloaded', (i) => {
+    set({ state: 'ready', version: i.version });
+    notify('PodAwful Widget update ready', `Version ${i.version} installs when you restart the widget`, null);
+  });
+  autoUpdater.on('error', (e) => set({ state: 'error', error: String((e && e.message) || e).slice(0, 200) }));
+  const check = () => autoUpdater.checkForUpdates().catch(() => {});
+  setTimeout(check, 10 * 1000);
+  setInterval(check, 6 * 3600 * 1000);
 }
 
 function applyLoginItem() {
@@ -276,11 +331,14 @@ app.whenReady().then(() => {
   ipcMain.handle('suggest-goon', (_e, kind, g) => open(issueUrl(REPO, kind === 'new' ? 'new' : 'update', g || {})));
   ipcMain.handle('open-url', (_e, url) => open(url));
   ipcMain.handle('check-now', () => startAll());
+  ipcMain.handle('check-update', () => (autoUpdater ? autoUpdater.checkForUpdates().catch(() => {}) : null));
+  ipcMain.handle('install-update', () => {
+    if (!autoUpdater || runtime.update.state !== 'ready') return;
+    quitting = true;
+    autoUpdater.quitAndInstall();
+  });
   ipcMain.handle('test-notification', () => {
-    const was = store.get().paused;
-    store.set({ paused: false });
-    notify('TEST: PodAwful is LIVE', 'This is what a go-live alert looks like', 'https://kick.com/podawful', true);
-    store.set({ paused: was });
+    notify('TEST: PodAwful is LIVE', 'This is what a go-live alert looks like', 'https://kick.com/podawful', { alarm: true, force: true });
   });
   ipcMain.on('tray-image', (_e, dataUrl) => {
     if (tray) tray.setImage(nativeImage.createFromDataURL(dataUrl).resize({ width: 32, height: 32 }));
@@ -293,6 +351,7 @@ app.whenReady().then(() => {
   createWindow();
   startAll();
   startShared();
+  setupUpdater();
 });
 
 app.on('second-instance', showWindow);

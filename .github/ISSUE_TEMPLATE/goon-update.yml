@@ -32,6 +32,9 @@ body:
   - type: input
     id: rumble
     attributes: { label: Rumble }
+  - type: input
+    id: twitch
+    attributes: { label: Twitch }
   - type: textarea
     id: notes
     attributes: { label: Notes / proof link }

@@ -12,9 +12,9 @@ const list = () => ({
 });
 
 const newBody = (o) =>
-  `### Name\n\n${o.name}\n\n### X handle\n\n${o.x || '_No response_'}\n\n### YouTube\n\n${o.yt || '_No response_'}\n\n### Kick\n\n${o.kick || '_No response_'}\n\n### Rumble\n\n${o.rumble || '_No response_'}\n\n### Notes\n\n_No response_`;
+  `### Name\n\n${o.name}\n\n### X handle\n\n${o.x || '_No response_'}\n\n### YouTube\n\n${o.yt || '_No response_'}\n\n### Kick\n\n${o.kick || '_No response_'}\n\n### Rumble\n\n${o.rumble || '_No response_'}\n\n### Twitch\n\n${o.twitch || '_No response_'}\n\n### Notes\n\n_No response_`;
 const updBody = (o) =>
-  `### Goon ID\n\n${o.id || '_No response_'}\n\n### Name\n\n${o.name}\n\n### What happened?\n\n${o.what}\n\n### X handle\n\n${o.x || '_No response_'}\n\n### YouTube\n\n${o.yt || '_No response_'}\n\n### Kick\n\n${o.kick || '_No response_'}\n\n### Rumble\n\n${o.rumble || '_No response_'}\n\n### Notes / proof link\n\n_No response_`;
+  `### Goon ID\n\n${o.id || '_No response_'}\n\n### Name\n\n${o.name}\n\n### What happened?\n\n${o.what}\n\n### X handle\n\n${o.x || '_No response_'}\n\n### YouTube\n\n${o.yt || '_No response_'}\n\n### Kick\n\n${o.kick || '_No response_'}\n\n### Rumble\n\n${o.rumble || '_No response_'}\n\n### Twitch\n\n${o.twitch || '_No response_'}\n\n### Notes / proof link\n\n_No response_`;
 
 test('parseForm reads issue-form markdown', () => {
   const f = parseForm('### Name\r\n\r\nMy Guy\r\n\r\n### X handle\r\n\r\n_No response_\r\n');
@@ -26,7 +26,7 @@ test('new goon suggestion is added with a slug id', () => {
   const r = applyIssue(j, { labels: [{ name: 'goon-suggestion' }], body: newBody({ name: 'My Guy!', x: '@MyGuy', kick: 'https://kick.com/myguy' }) });
   assert.strictEqual(r.changed, true);
   const g = j.goons[1];
-  assert.deepStrictEqual(g, { id: 'my-guy', name: 'My Guy!', xHandle: 'MyGuy', youtube: '', kick: 'myguy', rumble: '', status: 'active' });
+  assert.deepStrictEqual(g, { id: 'my-guy', name: 'My Guy!', xHandle: 'MyGuy', youtube: '', kick: 'myguy', rumble: '', twitch: '', status: 'active' });
   assert.strictEqual(parseList(j).length, 2);
 });
 
@@ -37,6 +37,15 @@ test('rumble-only suggestion works and rumble links can be fixed', () => {
   applyIssue(j, { labels: ['goon-update'], body: updBody({ id: 'mersh', name: 'Mersh', what: 'Links are wrong (corrected below)', rumble: 'MershRumble' }) });
   assert.strictEqual(j.goons[0].rumble, 'MershRumble');
   assert.throws(() => applyIssue(list(), { labels: ['goon-suggestion'], body: newBody({ name: 'Bad', rumble: 'not a channel!!' }) }), /valid Rumble/);
+});
+
+test('twitch suggestion, fix, and validation', () => {
+  const j = list();
+  applyIssue(j, { labels: ['goon-suggestion'], body: newBody({ name: 'Streamer', twitch: 'https://twitch.tv/Streamer_1' }) });
+  assert.strictEqual(j.goons[1].twitch, 'Streamer_1');
+  applyIssue(j, { labels: ['goon-update'], body: updBody({ id: 'mersh', name: 'Mersh', what: 'Links are wrong (corrected below)', twitch: 'mershtv' }) });
+  assert.strictEqual(j.goons[0].twitch, 'mershtv');
+  assert.throws(() => applyIssue(list(), { labels: ['goon-suggestion'], body: newBody({ name: 'Bad', twitch: 'a b' }) }), /valid Twitch/);
 });
 
 test('duplicate suggestion (same name or handle) is refused', () => {

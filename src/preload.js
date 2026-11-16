@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('widget', {
   refreshGoons: () => ipcRenderer.invoke('refresh-goons'),
   dismissGoonNews: () => ipcRenderer.invoke('dismiss-goon-news'),
   suggestGoon: (kind, g) => ipcRenderer.invoke('suggest-goon', kind, g),
+  checkUpdate: () => ipcRenderer.invoke('check-update'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
   open: (url) => ipcRenderer.invoke('open-url', url),
   checkNow: () => ipcRenderer.invoke('check-now'),
   testNotification: () => ipcRenderer.invoke('test-notification'),

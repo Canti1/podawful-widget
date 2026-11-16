@@ -6,7 +6,7 @@ const { SHARED_URL } = require('./sharedGoons');
 // Handles are best guesses - editable in the app. Empty string = not set.
 function defaults() {
   return {
-    jesse: { id: 'jesse', name: 'PodAwful', xHandle: 'podawful', youtube: '', kick: 'podawful', rumble: 'PODAWFUL' },
+    jesse: { id: 'jesse', name: 'PodAwful', xHandle: 'podawful', youtube: '', kick: 'podawful', rumble: 'PODAWFUL', twitch: '' },
     goons: [], // this person's private goons; the shared list lives in `shared`
     shared: { url: SHARED_URL, goons: [], fetchedAt: null, hidden: [] },
     opera: { path: '' },
@@ -14,6 +14,9 @@ function defaults() {
     alarm: { enabled: true, volume: 0.7 },
     x: { token: '', capUsd: 20, excludeReplies: true, monthKey: '', postsRead: 0, lastSeen: {} },
     site: { url: 'https://podawful.com', hash: '', changedAt: null },
+    feed: { url: 'https://podawful.com/rss', lastGuid: '', latest: null },
+    alerts: {}, // person id -> 'alarm' | 'popup' | 'mute' (default alarm)
+    quiet: { enabled: false, start: '23:00', end: '08:00', hidePopups: false },
     startWithWindows: false,
     paused: false,
   };
@@ -53,6 +56,7 @@ function createStore(filePath) {
     youtube: String(g.youtube || '').trim(),
     kick: String(g.kick || '').trim(),
     rumble: String(g.rumble || '').trim(),
+    twitch: String(g.twitch || '').trim().replace(/^@/, ''),
   });
 
   return {

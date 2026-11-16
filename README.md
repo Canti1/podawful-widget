@@ -4,9 +4,12 @@
 
 A small Windows tray widget that:
 
-- pops up an alert (with a smoke-alarm sound) when PodAwful or any goon goes live on YouTube, Kick, or Rumble
+- pops up an alert (with a smoke-alarm sound) when PodAwful or any goon goes live on YouTube, Kick, Rumble, or Twitch
+- shows everyone who's live right now in a strip at the top
 - shows their X profile right in the widget
-- tells you when something new shows up on podawful.com
+- tells you when a new PodAwful episode drops (and when anything else changes on podawful.com)
+- lets you set each person to 🔊 Alarm, 💬 Pop-up only, or 🔕 Muted, plus quiet hours with no alarm overnight
+- updates itself: new versions download in the background and install when you restart it
 - optionally pops up new X posts (needs your own paid X API key, see below)
 
 ## Install
@@ -32,7 +35,9 @@ Each goon has a status: `active`, `suspended` (still checked, but marked), or `c
 
 ### For the maintainer: approving suggestions
 
-Add the **`approved`** label to a suggestion or report issue. A GitHub Action checks it (valid handles, no duplicates), updates `goons.json`, commits, comments, and closes the issue. If something's wrong it comments why and removes the label, so you can fix the issue text and label it again. You can also edit `goons.json` by hand; the Tests workflow checks it on every push.
+New suggestions are checked automatically when they're opened: duplicates are closed, broken ones get **`needs-fix`** (and are re-checked when edited), valid ones get **`ready-for-review`**. More than 3 suggestions from one account in a day are closed as **`possible-spam`**, and accounts under a week old get a **`new-account`** label.
+
+To approve, add the **`approved`** label to a suggestion or report issue. A GitHub Action checks it (valid handles, no duplicates), updates `goons.json`, commits, comments, and closes the issue. If something's wrong it comments why and removes the label, so you can fix the issue text and label it again. You can also edit `goons.json` by hand; the Tests workflow checks it on every push.
 
 ## X post pop-ups (optional)
 
