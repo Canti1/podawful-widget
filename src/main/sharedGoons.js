@@ -25,6 +25,7 @@ function parseList(json) {
       xHandle: str(g.xHandle).replace(/^@/, ''),
       youtube: str(g.youtube),
       kick: str(g.kick),
+      rumble: str(g.rumble),
       status: STATUSES.includes(g.status) ? g.status : 'active',
       note: str(g.note),
     });
@@ -46,7 +47,7 @@ function diffLists(prev, next) {
       continue;
     }
     if (g.status === 'closed' && old.status !== 'closed') closed.push(g.name);
-    if (['name', 'xHandle', 'youtube', 'kick', 'status', 'note'].some((k) => (old[k] || '') !== (g[k] || ''))) changed = true;
+    if (['name', 'xHandle', 'youtube', 'kick', 'rumble', 'status', 'note'].some((k) => (old[k] || '') !== (g[k] || ''))) changed = true;
   }
   return { added, closed, changed };
 }
@@ -90,6 +91,7 @@ function issueUrl(repo, kind, g = {}) {
   p.set('x', g.xHandle || '');
   p.set('youtube', g.youtube || '');
   p.set('kick', g.kick || '');
+  p.set('rumble', g.rumble || '');
   return u.toString();
 }
 

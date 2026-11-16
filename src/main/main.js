@@ -3,6 +3,7 @@ const { app, BrowserWindow, Tray, Menu, Notification, nativeImage, ipcMain, net,
 const { createStore } = require('./store');
 const { checkYouTube } = require('./checkers/youtube');
 const { checkKick } = require('./checkers/kick');
+const { checkRumble } = require('./checkers/rumble');
 const { checkSite } = require('./checkers/site');
 const { createXWatcher } = require('./checkers/x');
 const { createLiveTracker, checkAllLive } = require('./liveTracker');
@@ -75,10 +76,11 @@ async function runLive() {
   const results = await checkAllLive(ps, {
     youtube: (c) => checkYouTube(c, fetchFn),
     kick: (c) => checkKick(c, fetchFn),
+    rumble: (c) => checkRumble(c, fetchFn),
   });
   for (const { person, platform, result } of results) {
     if (tracker.update(person.id, platform, result) === 'went-live') {
-      const where = platform === 'kick' ? 'Kick' : 'YouTube';
+      const where = { kick: 'Kick', rumble: 'Rumble', youtube: 'YouTube' }[platform];
       const browser = findOpera(store.get().opera.path) ? 'Opera' : 'your browser';
       notify(`${person.name} is LIVE on ${where}`, `Click to watch in ${browser}`, result.url, true);
     }

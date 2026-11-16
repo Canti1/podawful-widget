@@ -82,6 +82,7 @@ test('issueUrl pre-fills the issue form', () => {
   assert.strictEqual(u.searchParams.get('title'), 'New goon: My Guy');
   assert.strictEqual(u.searchParams.get('x'), 'myguy');
   assert.strictEqual(u.searchParams.get('kick'), 'mg');
+  assert.strictEqual(u.searchParams.get('rumble'), '');
   const r = new URL(issueUrl('Canti1/podawful-widget', 'update', { id: 'mersh', name: 'Mersh' }));
   assert.strictEqual(r.searchParams.get('template'), 'goon-update.yml');
   assert.strictEqual(r.searchParams.get('goon_id'), 'mersh');

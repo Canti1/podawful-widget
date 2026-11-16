@@ -18,6 +18,11 @@ function isLive(id) {
   return Object.values((state.live || {})[id] || {}).some((v) => v.live);
 }
 
+function rumbleUrl(c) {
+  const v = String(c).trim().replace(/^https?:\/\/(www\.)?rumble\.com\//i, '').replace(/\/+$/, '');
+  return `https://rumble.com/${/^(c|user)\//i.test(v) ? v : 'c/' + v}`;
+}
+
 function youtubeUrl(c) {
   if (/^https?:/i.test(c)) return c;
   return `https://www.youtube.com/${c.startsWith('@') ? c : '@' + c}`;
@@ -39,7 +44,7 @@ function renderBadges(container, person) {
   if (person.status === 'closed') container.append(badge('✖ account closed', 'unset'));
   if (person.status === 'suspended') container.append(badge('⚠ suspended', 'unset', null, person.note || ''));
   const live = (state.live || {})[person.id] || {};
-  for (const [platform, name] of [['youtube', 'YouTube'], ['kick', 'Kick']]) {
+  for (const [platform, name] of [['youtube', 'YouTube'], ['kick', 'Kick'], ['rumble', 'Rumble']]) {
     if (!person[platform]) {
       container.append(badge(`${name}: not set`, 'unset'));
       continue;
@@ -48,7 +53,7 @@ function renderBadges(container, person) {
     if (st && st.live) {
       container.append(badge(`🔴 LIVE on ${name}`, 'live', () => widget.open(st.url), `Watch in ${browserName()}`));
     } else {
-      const fallback = platform === 'kick' ? `https://kick.com/${person.kick}` : youtubeUrl(person.youtube);
+      const fallback = { kick: () => `https://kick.com/${person.kick}`, rumble: () => rumbleUrl(person.rumble), youtube: () => youtubeUrl(person.youtube) }[platform]();
       container.append(badge(`${name}: ${st ? 'offline' : 'checking…'}`, 'link', () => widget.open(fallback), `Open channel in ${browserName()}`));
     }
   }
@@ -245,7 +250,7 @@ function openDialog(mode, person) {
   dialogMode = mode;
   const f = $('goon-form');
   $('goon-dialog-title').textContent = mode.type === 'add' ? 'Add goon' : `Edit ${person.name}`;
-  for (const k of ['name', 'xHandle', 'youtube', 'kick']) f.elements[k].value = person ? person[k] : '';
+  for (const k of ['name', 'xHandle', 'youtube', 'kick', 'rumble']) f.elements[k].value = person ? person[k] : '';
   f.elements.name.readOnly = mode.id === 'jesse';
   f.elements.suggest.checked = false;
   $('suggest-row').classList.toggle('hidden', mode.type !== 'add');
@@ -294,7 +299,7 @@ $('del-goon').onclick = async () => {
 $('goon-dialog').addEventListener('close', async () => {
   if ($('goon-dialog').returnValue !== 'ok') return;
   const f = $('goon-form').elements;
-  const data = { name: f.name.value, xHandle: f.xHandle.value, youtube: f.youtube.value, kick: f.kick.value };
+  const data = { name: f.name.value, xHandle: f.xHandle.value, youtube: f.youtube.value, kick: f.kick.value, rumble: f.rumble.value };
   if (dialogMode.type === 'add') {
     const g = await widget.addGoon(data);
     selectedGoon = g.id;

@@ -19,6 +19,9 @@ body:
   - type: input
     id: kick
     attributes: { label: Kick, description: Kick username }
+  - type: input
+    id: rumble
+    attributes: { label: Rumble, description: Channel name or rumble.com URL }
   - type: textarea
     id: notes
     attributes: { label: Notes, description: Anything else (optional) }

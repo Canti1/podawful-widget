@@ -29,6 +29,9 @@ body:
   - type: input
     id: kick
     attributes: { label: Kick }
+  - type: input
+    id: rumble
+    attributes: { label: Rumble }
   - type: textarea
     id: notes
     attributes: { label: Notes / proof link }

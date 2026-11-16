@@ -19,7 +19,7 @@ function createLiveTracker() {
 async function checkAllLive(people, checkers) {
   const jobs = [];
   for (const p of people) {
-    for (const platform of ['youtube', 'kick']) {
+    for (const platform of ['youtube', 'kick', 'rumble']) {
       if (p[platform]) {
         jobs.push(checkers[platform](p[platform]).then((result) => ({ person: p, platform, result })));
       }

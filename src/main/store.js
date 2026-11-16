@@ -6,7 +6,7 @@ const { SHARED_URL } = require('./sharedGoons');
 // Handles are best guesses - editable in the app. Empty string = not set.
 function defaults() {
   return {
-    jesse: { id: 'jesse', name: 'PodAwful', xHandle: 'podawful', youtube: '', kick: 'podawful' },
+    jesse: { id: 'jesse', name: 'PodAwful', xHandle: 'podawful', youtube: '', kick: 'podawful', rumble: 'PODAWFUL' },
     goons: [], // this person's private goons; the shared list lives in `shared`
     shared: { url: SHARED_URL, goons: [], fetchedAt: null, hidden: [] },
     opera: { path: '' },
@@ -52,6 +52,7 @@ function createStore(filePath) {
     xHandle: String(g.xHandle || '').trim().replace(/^@/, ''),
     youtube: String(g.youtube || '').trim(),
     kick: String(g.kick || '').trim(),
+    rumble: String(g.rumble || '').trim(),
   });
 
   return {

@@ -56,6 +56,13 @@ function cleanKick(s) {
   return v;
 }
 
+function cleanRumble(s) {
+  const v = clean(s).replace(/^https?:\/\/(www\.)?rumble\.com\//i, '').replace(/[?#].*$/, '').replace(/\/(livestreams|videos|about)?\/?$/i, '');
+  if (!v) return '';
+  if (!/^((c|user)\/)?[A-Za-z0-9_.-]{2,50}$/.test(v)) throw new Error(`"${v}" isn't a valid Rumble channel.`);
+  return v;
+}
+
 const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
 
 function slug(name, taken) {
@@ -83,12 +90,13 @@ function applyIssue(json, issue) {
       xHandle: cleanX(f['X handle']),
       youtube: cleanYouTube(f['YouTube']),
       kick: cleanKick(f['Kick']),
+      rumble: cleanRumble(f['Rumble']),
       status: 'active',
     };
-    if (!g.xHandle && !g.youtube && !g.kick) throw new Error('No X, YouTube, or Kick given. Need at least one.');
+    if (!g.xHandle && !g.youtube && !g.kick && !g.rumble) throw new Error('No X, YouTube, Kick, or Rumble given. Need at least one.');
     const dupe =
       findGoon(goons, '', g.name) ||
-      goons.find((o) => (g.xHandle && norm(o.xHandle) === norm(g.xHandle)) || (g.kick && norm(o.kick) === norm(g.kick)) || (g.youtube && norm(o.youtube) === norm(g.youtube)));
+      goons.find((o) => (g.xHandle && norm(o.xHandle) === norm(g.xHandle)) || (g.kick && norm(o.kick) === norm(g.kick)) || (g.youtube && norm(o.youtube) === norm(g.youtube)) || (g.rumble && norm(o.rumble) === norm(g.rumble)));
     if (dupe) throw new Error(`Looks like a duplicate of **${dupe.name}** (\`${dupe.id}\`), who's already on the list. Use "Report a closed account / fix links" to change them instead.`);
     g.id = slug(g.name, new Set(goons.map((o) => o.id)));
     goons.push(g);
@@ -115,9 +123,11 @@ function applyIssue(json, issue) {
       const x = cleanX(f['X handle']);
       const yt = cleanYouTube(f['YouTube']);
       const k = cleanKick(f['Kick']);
+      const rb = cleanRumble(f['Rumble']);
       if (x) g.xHandle = x;
       if (yt) g.youtube = yt;
       if (k) g.kick = k;
+      if (rb) g.rumble = rb;
       summary = `Updated **${g.name}**'s links.`;
     } else {
       throw new Error(`Unknown "What happened?" choice: "${clean(f['What happened?'])}".`);
@@ -157,4 +167,4 @@ function main([eventPath, goonsPath, outDir]) {
 
 if (require.main === module) main(process.argv.slice(2));
 
-module.exports = { parseForm, applyIssue, cleanX, cleanYouTube, cleanKick };
+module.exports = { parseForm, applyIssue, cleanX, cleanYouTube, cleanKick, cleanRumble };
