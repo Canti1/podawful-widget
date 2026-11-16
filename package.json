@@ -1,0 +1,17 @@
+{
+  "name": "podawful-widget",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Personal PodAwful / goons tracker widget",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1"
+  },
+  "allowScripts": {
+    "electron@33.2.1": true
+  }
+}
