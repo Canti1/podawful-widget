@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('widget', {
   checkUpdate: () => ipcRenderer.invoke('check-update'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
   open: (url) => ipcRenderer.invoke('open-url', url),
+  togglePlayer: () => ipcRenderer.invoke('toggle-player'),
   checkNow: () => ipcRenderer.invoke('check-now'),
   testNotification: () => ipcRenderer.invoke('test-notification'),
   setTrayImage: (dataUrl) => ipcRenderer.send('tray-image', dataUrl),

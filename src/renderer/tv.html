@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>PodAwful Live</title>
+  <link rel="stylesheet" href="tv.css">
+</head>
+<body>
+  <div class="tv" id="tv">
+    <div class="antenna" aria-hidden="true">
+      <span class="rod left"></span>
+      <span class="rod right"></span>
+      <span class="dome"></span>
+    </div>
+
+    <div class="cabinet">
+      <div class="bezel">
+        <div class="screen off" id="screen">
+          <webview id="stream" partition="persist:podawful"></webview>
+          <canvas id="static" width="160" height="90"></canvas>
+          <div class="scanlines"></div>
+          <div class="glass"></div>
+          <div class="osd hidden" id="osd"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="badge">POD<br>AWFUL</div>
+        <div class="knob-row">
+          <button class="knob" id="knob-ch" title="Channel: reload the stream"><span class="tick"></span></button>
+          <label>CH</label>
+        </div>
+        <div class="knob-row">
+          <button class="knob" id="knob-vol" title="Volume: mute / unmute"><span class="tick"></span></button>
+          <label>VOL</label>
+        </div>
+        <div class="grill" aria-hidden="true"></div>
+        <div class="power-row">
+          <span class="led" id="led"></span>
+          <button class="power" id="power" title="Turn the TV off">⏻</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="feet" aria-hidden="true"><span></span><span></span></div>
+  </div>
+  <script src="tv.js"></script>
+</body>
+</html>

@@ -12,6 +12,7 @@ function defaults() {
     opera: { path: '' },
     intervals: { liveSec: 120, xSec: 300, siteSec: 900, sharedSec: 21600 },
     alarm: { enabled: true, volume: 0.7 },
+    player: { autoOpen: true }, // open podawful.com/live in the built-in player when PodAwful goes live
     x: { token: '', capUsd: 20, excludeReplies: true, monthKey: '', postsRead: 0, lastSeen: {} },
     site: { url: 'https://podawful.com', hash: '', changedAt: null },
     feed: { url: 'https://podawful.com/rss', lastGuid: '', latest: null },

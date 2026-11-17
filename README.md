@@ -4,8 +4,10 @@
 
 A small Windows tray widget that:
 
-- pops up an alert (with a smoke-alarm sound) when PodAwful or any goon goes live on YouTube, Kick, Rumble, or Twitch
+- pops up an alert (with a smoke-detector low-battery chirp) when PodAwful or any goon goes live on YouTube, Kick, Rumble, or Twitch
 - shows everyone who's live right now in a strip at the top
+- when PodAwful goes live, a little retro TV slides out of the widget and plays podawful.com/live with sound (turn this off in Settings; it stays muted during quiet hours)
+- has a 🍕 Pizza Fund button that opens the podawful.com subscription page
 - shows their X profile right in the widget
 - tells you when a new PodAwful episode drops (and when anything else changes on podawful.com)
 - lets you set each person to 🔊 Alarm, 💬 Pop-up only, or 🔕 Muted, plus quiet hours with no alarm overnight

@@ -6,6 +6,9 @@ const { checkKick } = require('./checkers/kick');
 const { checkRumble } = require('./checkers/rumble');
 const { checkTwitch } = require('./checkers/twitch');
 const { checkFeed } = require('./checkers/feed');
+const { checkPodawfulLive } = require('./checkers/podawfulLive');
+const { createPlayer } = require('./player');
+const { shouldAutoOpen } = require('./playerRules');
 const { isQuiet, alertMode } = require('./alerts');
 const { checkSite } = require('./checkers/site');
 const { createXWatcher } = require('./checkers/x');
@@ -23,6 +26,11 @@ app.userAgentFallback = app.userAgentFallback.replace(/\s?Electron\/\S+/, '').re
 
 let win, tray, store, xWatcher;
 const tracker = createLiveTracker();
+const player = createPlayer({
+  getAnchor: () => win,
+  onChange: (isOpen) => { runtime.playerOpen = isOpen; pushState(); },
+});
+let playerOpenedThisStream = false;
 const runtime = { update: { state: 'idle' }, sharedOk: null, sharedNews: null, xStatus: 'no-token', lastLiveCheck: null, lastXCheck: null, lastSiteCheck: null, siteOk: null };
 const fetchFn = (url, opts) => net.fetch(url, opts);
 const timers = {};
@@ -79,9 +87,30 @@ function notify(title, body, url, opts = {}) {
   });
   if (!mode.popup) return;
   const n = new Notification({ title, body, icon: ICON_PATH, silent: mode.alarm });
-  n.on('click', () => (url ? open(url) : showWindow()));
+  n.on('click', () => (opts.onClick ? opts.onClick() : url ? open(url) : showWindow()));
   n.show();
   if (mode.alarm && win && !win.isDestroyed()) win.webContents.send('alarm');
+}
+
+const isLiveAnywhere = (id) => Object.values(tracker.snapshot()[id] || {}).some((v) => v.live);
+const quietNow = () => {
+  const q = store.get().quiet;
+  return q.enabled && isQuiet(new Date(), q.start, q.end);
+};
+
+// PodAwful went live: pop the player open and play with sound (muted in quiet hours).
+function maybeAutoOpenPlayer() {
+  const s = store.get();
+  const go = shouldAutoOpen({
+    autoOpen: s.player.autoOpen,
+    paused: s.paused || !!process.env.PAW_SILENT,
+    level: s.alerts.jesse,
+    alreadyOpenedThisStream: playerOpenedThisStream || player.isOpen(),
+  });
+  if (!go) return;
+  playerOpenedThisStream = true;
+  showWindow(); // the widget pops up and the player slides out of it
+  player.open({ sound: !quietNow() });
 }
 
 async function runLive() {
@@ -93,13 +122,24 @@ async function runLive() {
     rumble: (c) => checkRumble(c, fetchFn),
     twitch: (c) => checkTwitch(c, fetchFn),
   });
+  // podawful.com/live is PodAwful-only and opens in the built-in player.
+  const jesse = store.get().jesse;
+  const jesseWasLive = isLiveAnywhere('jesse');
+  results.push({ person: jesse, platform: 'site', result: await checkPodawfulLive(fetchFn) });
   for (const { person, platform, result } of results) {
     if (tracker.update(person.id, platform, result) === 'went-live') {
+      if (person.id === 'jesse') maybeAutoOpenPlayer();
+      if (platform === 'site') {
+        // Usually the same stream as YouTube/Kick/Rumble: don't ring twice.
+        if (!jesseWasLive) notify(`${person.name} is LIVE on podawful.com`, 'Click to watch in the widget player', null, { alarm: true, personId: person.id, onClick: () => { showWindow(); player.open(); } });
+        continue;
+      }
       const where = { kick: 'Kick', rumble: 'Rumble', youtube: 'YouTube', twitch: 'Twitch' }[platform];
       const browser = findOpera(store.get().opera.path) ? 'Opera' : 'your browser';
       notify(`${person.name} is LIVE on ${where}`, `Click to watch in ${browser}`, result.url, { alarm: true, personId: person.id });
     }
   }
+  if (!isLiveAnywhere('jesse')) playerOpenedThisStream = false; // next stream can auto-open again
   runtime.lastLiveCheck = Date.now();
 }
 
@@ -330,6 +370,7 @@ app.whenReady().then(() => {
   ipcMain.handle('dismiss-goon-news', () => { runtime.sharedNews = null; pushState(); });
   ipcMain.handle('suggest-goon', (_e, kind, g) => open(issueUrl(REPO, kind === 'new' ? 'new' : 'update', g || {})));
   ipcMain.handle('open-url', (_e, url) => open(url));
+  ipcMain.handle('toggle-player', () => player.toggle({ sound: true }));
   ipcMain.handle('check-now', () => startAll());
   ipcMain.handle('check-update', () => (autoUpdater ? autoUpdater.checkForUpdates().catch(() => {}) : null));
   ipcMain.handle('install-update', () => {

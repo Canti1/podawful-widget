@@ -99,7 +99,7 @@ const X_CLEAN_CSS = `
   }
 `;
 
-const PLATFORM = { youtube: 'YouTube', kick: 'Kick', rumble: 'Rumble', twitch: 'Twitch' };
+const PLATFORM = { youtube: 'YouTube', kick: 'Kick', rumble: 'Rumble', twitch: 'Twitch', site: 'podawful.com' };
 const LEVELS = [['alarm', '🔊 Alarm'], ['popup', '💬 Pop-up only'], ['mute', '🔕 Muted']];
 
 function fillAlertSelect(sel, id) {
@@ -118,7 +118,9 @@ function renderLiveStrip() {
   const chips = [];
   for (const p of people) {
     for (const [platform, st] of Object.entries((state.live || {})[p.id] || {})) {
-      if (st.live) chips.push(badge(`🔴 ${p.name} · ${PLATFORM[platform] || platform}`, 'live', () => widget.open(st.url), `Watch in ${browserName()}`));
+      if (!st.live) continue;
+      if (platform === 'site') chips.push(badge(`🔴 ${p.name} · podawful.com`, 'live', () => { if (!state.runtime.playerOpen) widget.togglePlayer(); }, 'Watch in the widget player'));
+      else chips.push(badge(`🔴 ${p.name} · ${PLATFORM[platform] || platform}`, 'live', () => widget.open(st.url), `Watch in ${browserName()}`));
     }
   }
   strip.classList.toggle('hidden', !chips.length);
@@ -161,6 +163,7 @@ function render() {
 
   // PodAwful tab
   renderBadges($('pod-badges'), s.jesse);
+  $('watch-live').textContent = state.runtime.playerOpen ? '✕ Close player' : '▶ Watch live';
   const line = $('site-line');
   const changed = s.site.changedAt;
   const fresh = changed && Date.now() - changed < 24 * 3600 * 1000;
@@ -247,6 +250,7 @@ function fillSettings() {
   const s = state.settings;
   $('s-alarm').checked = s.alarm.enabled;
   $('s-volume').value = s.alarm.volume;
+  $('s-autoplayer').checked = s.player.autoOpen;
   $('s-token').value = '';
   $('s-token').placeholder = s.x.hasToken ? 'token saved (paste a new one to replace)' : 'paste token to enable post pop-ups';
   $('s-cap').value = s.x.capUsd;
@@ -338,6 +342,8 @@ $('refresh-goons').onclick = async () => {
 };
 $('goon-news-x').onclick = () => widget.dismissGoonNews();
 $('unhide').onclick = () => widget.unhideGoons();
+$('watch-live').onclick = () => widget.togglePlayer();
+$('pizza-fund').onclick = () => widget.open('https://podawful.com/levels');
 $('edit-jesse').onclick = () => openDialog({ type: 'edit', id: 'jesse' }, state.settings.jesse);
 $('del-goon').onclick = async () => {
   const g = selected();
@@ -384,6 +390,7 @@ $('check-now').onclick = () => widget.checkNow();
 $('save-settings').onclick = async () => {
   const patch = {
     alarm: { enabled: $('s-alarm').checked, volume: Number($('s-volume').value) },
+    player: { autoOpen: $('s-autoplayer').checked },
     x: { capUsd: Math.max(1, Number($('s-cap').value) || 20), excludeReplies: $('s-replies').checked },
     intervals: {
       liveSec: Math.max(30, Number($('s-live').value) || 120),

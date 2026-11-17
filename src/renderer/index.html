@@ -34,6 +34,8 @@
       <div class="site-line" id="episode-line"></div>
       <div class="row-actions">
         <button id="edit-jesse" class="small">Edit PodAwful links</button>
+        <button id="watch-live" class="small" title="Open podawful.com/live in the built-in player">▶ Watch live</button>
+        <button id="pizza-fund" class="small" title="Open the Pizza Fund subscription page on podawful.com">🍕 Pizza Fund</button>
         <select id="pod-alert" class="alert-select" title="How loud PodAwful alerts are"></select>
       </div>
       <div class="xview" id="pod-x"></div>
@@ -62,7 +64,8 @@
 
     <section id="tab-settings" class="panel scroll">
       <h3>Alarm</h3>
-      <label class="check"><input type="checkbox" id="s-alarm"> Smoke alarm when someone goes live</label>
+      <label class="check"><input type="checkbox" id="s-alarm"> Smoke detector chirp when someone goes live</label>
+      <label class="check"><input type="checkbox" id="s-autoplayer"> Pop open the live player (podawful.com/live, with sound) when PodAwful goes live</label>
       <label>Volume <input type="range" id="s-volume" min="0" max="1" step="0.05"></label>
       <div class="row-actions">
         <button id="test-sound" class="small">Test sound</button>

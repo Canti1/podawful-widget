@@ -1,0 +1,106 @@
+/* Retro CRT in PodAwful colors: near-black cabinet, yellow trim, Hack type. */
+@font-face { font-family: Hack; src: url(../../assets/fonts/hack-bold.woff2) format("woff2"); font-weight: 700; }
+
+:root {
+  --cab: #1c1819;
+  --cab-hi: #2e2729;
+  --bezel: #0d0b0c;
+  --yellow: #ffd200;
+  --gold: #e6c75f;
+  --red: #dc3545;
+  --tv-w: 720px;
+  --tv-h: 452px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; user-select: none; }
+body { display: flex; align-items: center; font-family: Hack, Consolas, monospace; }
+/* The window grows out of the widget's edge, so pin the TV to that edge. */
+body.side-right { justify-content: flex-start; }
+body.side-left { justify-content: flex-end; }
+
+.tv { flex: none; width: var(--tv-w); height: var(--tv-h); display: flex; flex-direction: column; align-items: center; }
+
+/* Rabbit ears */
+.antenna { position: relative; width: 100%; height: 70px; flex: none; }
+.rod { position: absolute; bottom: 6px; left: 50%; width: 4px; height: 66px; background: linear-gradient(90deg, #8c8c8c, #e8e8e8 45%, #6b6b6b); border-radius: 2px; transform-origin: bottom center; }
+.rod::after { content: ''; position: absolute; top: -6px; left: -4px; width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff6b8, var(--yellow) 45%, #8a7100); }
+.rod.left { transform: translateX(-50%) rotate(-32deg); }
+.rod.right { transform: translateX(-50%) rotate(26deg); }
+.dome { position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); width: 64px; height: 26px; border-radius: 32px 32px 4px 4px; background: linear-gradient(180deg, var(--cab-hi), var(--cab)); border: 2px solid #000; }
+
+/* Cabinet */
+.cabinet {
+  flex: none; width: 100%; height: 365px; display: flex; gap: 12px; padding: 12px;
+  background: linear-gradient(180deg, var(--cab-hi), var(--cab) 30%, #141112);
+  border: 3px solid #000; border-radius: 18px;
+  box-shadow: inset 0 0 0 2px var(--yellow), inset 0 2px 0 4px rgba(255,255,255,.04), 0 10px 24px rgba(0,0,0,.6);
+}
+.bezel {
+  flex: none; width: 572px; height: 100%; padding: 22px; border-radius: 12px;
+  background: radial-gradient(ellipse at 50% 40%, #1a1617, var(--bezel) 70%);
+  box-shadow: inset 0 0 0 1px #000, inset 0 0 18px #000;
+}
+
+/* CRT screen */
+.screen {
+  position: relative; width: 100%; height: 100%; overflow: hidden; background: #000;
+  border-radius: 26px / 20px;
+  transition: transform .32s cubic-bezier(.2,.9,.3,1), filter .32s;
+}
+.screen.off { transform: scale(1, .004); filter: brightness(6); }
+.screen.dying { transform: scale(.002, .004); filter: brightness(8); transition-duration: .18s; }
+#stream, #static { position: absolute; inset: 0; width: 100%; height: 100%; }
+#static { image-rendering: pixelated; transition: opacity .4s; }
+#static.gone { opacity: 0; pointer-events: none; }
+.scanlines, .glass { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; }
+.scanlines { background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px); mix-blend-mode: multiply; }
+/* Curved glass: vignette + glare, and a bezel-colored ring that rounds the video's corners. */
+.glass {
+  background:
+    radial-gradient(ellipse 120% 90% at 30% 15%, rgba(255,255,255,.10), transparent 40%),
+    radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,.55) 100%);
+  box-shadow: 0 0 0 40px var(--bezel), inset 0 0 30px rgba(0,0,0,.7);
+}
+.osd {
+  position: absolute; top: 14px; right: 18px; pointer-events: none;
+  color: #6dff7a; font-weight: 700; font-size: 18px; letter-spacing: 2px; text-shadow: 0 0 6px #2bff45, 2px 2px 0 #000;
+}
+.osd.center { top: 50%; left: 50%; right: auto; transform: translate(-50%, -50%); color: var(--yellow); text-shadow: 0 0 8px rgba(255,210,0,.7), 2px 2px 0 #000; text-align: center; }
+.hidden { display: none; }
+
+/* Control panel */
+.panel { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0; }
+.badge {
+  width: 100%; padding: 6px 0; text-align: center; color: #000; background: var(--yellow);
+  font-weight: 700; font-size: 13px; letter-spacing: 3px; line-height: 1.1; border-radius: 3px;
+  box-shadow: inset 0 -2px 0 #b89600;
+}
+.knob-row { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.knob-row label { color: var(--gold); font-size: 10px; font-weight: 700; letter-spacing: 2px; }
+.knob {
+  position: relative; width: 46px; height: 46px; border-radius: 50%; border: 2px solid #000; cursor: pointer; padding: 0;
+  background: repeating-conic-gradient(#3a3335 0 10deg, #241f20 10deg 20deg);
+  box-shadow: 0 3px 0 #000, inset 0 0 0 6px #1c1819, inset 0 2px 2px rgba(255,255,255,.15);
+  transition: transform .25s;
+}
+.knob .tick { position: absolute; top: 5px; left: 50%; width: 4px; height: 12px; margin-left: -2px; background: var(--yellow); border-radius: 2px; }
+.knob:hover { box-shadow: 0 3px 0 #000, inset 0 0 0 6px #1c1819, 0 0 0 2px var(--yellow); }
+.knob:active { transform: translateY(2px); }
+.grill {
+  width: 100%; flex: 1; min-height: 40px; border-radius: 6px; border: 2px solid #000;
+  background: repeating-linear-gradient(0deg, #0b0909 0 3px, #2a2426 3px 6px);
+}
+.power-row { display: flex; align-items: center; gap: 10px; }
+.led { width: 9px; height: 9px; border-radius: 50%; background: #3b0f13; box-shadow: inset 0 0 2px #000; }
+.led.on { background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px #fff inset; }
+.power {
+  width: 34px; height: 34px; border-radius: 6px; border: 2px solid #000; cursor: pointer;
+  background: linear-gradient(180deg, #3a3335, #1f1a1b); color: var(--yellow); font-size: 16px; line-height: 1;
+  box-shadow: 0 3px 0 #000;
+}
+.power:hover { color: #fff; }
+.power:active { transform: translateY(2px); box-shadow: 0 1px 0 #000; }
+button:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+
+.feet { width: 76%; height: 17px; display: flex; justify-content: space-between; flex: none; }
+.feet span { width: 54px; height: 100%; background: #0d0b0c; border: 2px solid #000; border-top: none; border-radius: 0 0 8px 8px; }

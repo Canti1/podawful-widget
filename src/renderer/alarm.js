@@ -1,34 +1,36 @@
-// Synthesized smoke-detector alarm: piercing ~3.1 kHz tone in the classic
-// "three beeps, pause" pattern, played twice. No audio file needed.
+// Synthesized smoke-detector "low battery" chirp: a single short, piercing
+// piezo chirp (~3.3 kHz, ~60 ms, fast decay). A real detector chirps once
+// every ~40 s; for an alert we chirp 3 times, ~1.4 s apart. No audio file needed.
 let ctx;
 
 function playAlarm(volume = 0.7) {
   ctx = ctx || new AudioContext();
   if (ctx.state === 'suspended') ctx.resume();
   const out = ctx.createGain();
-  out.gain.value = Math.max(0, Math.min(1, volume)) * 0.35; // square waves are loud
-  const lp = ctx.createBiquadFilter();
-  lp.type = 'lowpass';
-  lp.frequency.value = 6000;
-  lp.connect(out).connect(ctx.destination);
+  out.gain.value = Math.max(0, Math.min(1, volume)) * 0.45;
+  // Piezo buzzers resonate in a narrow band; a bandpass gives that hard "chirp" edge.
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 3300;
+  bp.Q.value = 4;
+  bp.connect(out).connect(ctx.destination);
 
   const start = ctx.currentTime + 0.05;
-  const beep = 0.5, gap = 0.25, roundGap = 1.2;
-  for (let round = 0; round < 2; round++) {
-    for (let i = 0; i < 3; i++) {
-      const t = start + round * (3 * (beep + gap) + roundGap) + i * (beep + gap);
-      const osc = ctx.createOscillator();
-      osc.type = 'square';
-      osc.frequency.value = 3100;
-      const env = ctx.createGain();
-      env.gain.setValueAtTime(0, t);
-      env.gain.linearRampToValueAtTime(1, t + 0.01);
-      env.gain.setValueAtTime(1, t + beep - 0.01);
-      env.gain.linearRampToValueAtTime(0, t + beep);
-      osc.connect(env).connect(lp);
-      osc.start(t);
-      osc.stop(t + beep + 0.02);
-    }
+  const chirp = 0.06, spacing = 1.4, count = 3;
+  for (let i = 0; i < count; i++) {
+    const t = start + i * spacing;
+    const osc = ctx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(3350, t);
+    osc.frequency.linearRampToValueAtTime(3250, t + chirp); // tiny droop, like a real piezo
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0, t);
+    env.gain.linearRampToValueAtTime(1, t + 0.004);
+    env.gain.setValueAtTime(1, t + chirp * 0.6);
+    env.gain.exponentialRampToValueAtTime(0.001, t + chirp);
+    osc.connect(env).connect(bp);
+    osc.start(t);
+    osc.stop(t + chirp + 0.02);
   }
 }
 
