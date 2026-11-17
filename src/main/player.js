@@ -18,6 +18,11 @@ function createPlayer({ getAnchor, onChange = () => {} }) {
   let closing = false;
   let unhook = () => {};
 
+  // Message the TV page, if it's still there.
+  const tvSend = (ch, ...args) => {
+    if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) win.webContents.send(ch, ...args);
+  };
+
   const anchorBounds = () => {
     const a = getAnchor();
     return a && !a.isDestroyed() && a.isVisible() ? a.getBounds() : null;
@@ -47,7 +52,7 @@ function createPlayer({ getAnchor, onChange = () => {} }) {
       if (!win || win.isDestroyed() || anim) return;
       const t = target();
       if (!t) return;
-      if (t.side !== open.side) win.webContents.send('tv-side', t.side);
+      if (t.side !== open.side) tvSend('tv-side', t.side);
       open = t;
       win.setBounds(t);
     };
@@ -116,7 +121,7 @@ function createPlayer({ getAnchor, onChange = () => {} }) {
         if (!win) return;
         Menu.buildFromTemplate([
           { label: 'Reload stream', click: () => guest.loadURL(LIVE_URL) },
-          { label: 'Sign in to podawful.com', click: () => win && win.webContents.send('tv-sign-in') },
+          { label: 'Sign in to podawful.com', click: () => tvSend('tv-sign-in') },
           { type: 'separator' },
           { label: 'Turn off TV', click: close },
         ]).popup({ window: win });
@@ -129,7 +134,7 @@ function createPlayer({ getAnchor, onChange = () => {} }) {
     win.once('ready-to-show', () => {
       if (!win) return;
       win.showInactive();
-      slide(0, 1, () => win && win.webContents.send('tv-power-on'));
+      slide(0, 1, () => tvSend('tv-power-on'));
     });
     onChange(true);
   }
@@ -138,7 +143,7 @@ function createPlayer({ getAnchor, onChange = () => {} }) {
   function close() {
     if (!win || win.isDestroyed() || closing) return;
     closing = true;
-    win.webContents.send('tv-power-off');
+    tvSend('tv-power-off');
     setTimeout(() => slide(1, 0, destroy), 260);
   }
 

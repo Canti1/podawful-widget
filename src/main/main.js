@@ -57,7 +57,8 @@ function publicState() {
 
 function pushState() {
   const st = publicState();
-  if (win && !win.isDestroyed()) win.webContents.send('state', st);
+  // The page can be gone while the window object lingers (e.g. mid-close), so check both.
+  if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) win.webContents.send('state', st);
   updateTray(st);
 }
 
@@ -89,7 +90,7 @@ function notify(title, body, url, opts = {}) {
   const n = new Notification({ title, body, icon: ICON_PATH, silent: mode.alarm });
   n.on('click', () => (opts.onClick ? opts.onClick() : url ? open(url) : showWindow()));
   n.show();
-  if (mode.alarm && win && !win.isDestroyed()) win.webContents.send('alarm');
+  if (mode.alarm && win && !win.isDestroyed() && !win.webContents.isDestroyed()) win.webContents.send('alarm');
 }
 
 const isLiveAnywhere = (id) => Object.values(tracker.snapshot()[id] || {}).some((v) => v.live);

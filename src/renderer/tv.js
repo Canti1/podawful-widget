@@ -61,7 +61,16 @@ function setSnow(on) {
   canvas.classList.toggle('gone', !on);
 }
 
-stream.addEventListener('did-start-loading', () => setSnow(true));
+// Snow only when the whole page changes (not when the embedded player loads stuff).
+let snowTimer;
+stream.addEventListener('did-start-navigation', (e) => {
+  if (e.isMainFrame && !e.isInPlace) { clearTimeout(snowTimer); setSnow(true); }
+});
+// Clear once everything has stopped loading, with a beat for the player to start.
+stream.addEventListener('did-stop-loading', () => {
+  clearTimeout(snowTimer);
+  snowTimer = setTimeout(() => setSnow(false), 700);
+});
 stream.addEventListener('did-finish-load', () => {
   let path = '';
   try { path = new URL(stream.getURL()).pathname; } catch {}
@@ -69,8 +78,6 @@ stream.addEventListener('did-finish-load', () => {
     stream.insertCSS(PAGE_CSS).catch(() => {});
     stream.executeJavaScript(UNMUTE_JS).catch(() => {});
   }
-  // Let the embedded player get going before the snow clears.
-  setTimeout(() => setSnow(false), 700);
 });
 stream.addEventListener('did-fail-load', (e) => {
   if (e.errorCode === -3) return; // aborted by a redirect/reload

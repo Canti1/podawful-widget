@@ -6,7 +6,7 @@ const { SHARED_URL } = require('./sharedGoons');
 // Handles are best guesses - editable in the app. Empty string = not set.
 function defaults() {
   return {
-    jesse: { id: 'jesse', name: 'PodAwful', xHandle: 'podawful', youtube: '', kick: 'podawful', rumble: 'PODAWFUL', twitch: '' },
+    jesse: { id: 'jesse', name: 'PodAwful', xHandle: 'podawful', youtube: '@podawfulh2bh', kick: 'podawful', rumble: 'PODAWFUL', twitch: '' },
     goons: [], // this person's private goons; the shared list lives in `shared`
     shared: { url: SHARED_URL, goons: [], fetchedAt: null, hidden: [] },
     opera: { path: '' },
