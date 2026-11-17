@@ -1,6 +1,6 @@
 // Synthesized smoke-detector "low battery" chirp: a single short, piercing
 // piezo chirp (~3.3 kHz, ~60 ms, fast decay). A real detector chirps once
-// every ~40 s; for an alert we chirp 3 times, ~1.4 s apart. No audio file needed.
+// every ~40 s; the alert is one chirp, just like the real thing. No audio file needed.
 let ctx;
 
 function playAlarm(volume = 0.7) {
@@ -16,7 +16,7 @@ function playAlarm(volume = 0.7) {
   bp.connect(out).connect(ctx.destination);
 
   const start = ctx.currentTime + 0.05;
-  const chirp = 0.06, spacing = 1.4, count = 3;
+  const chirp = 0.06, spacing = 1.4, count = 1;
   for (let i = 0; i < count; i++) {
     const t = start + i * spacing;
     const osc = ctx.createOscillator();
